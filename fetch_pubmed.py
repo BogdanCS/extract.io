@@ -1,6 +1,6 @@
-from Bio import Entrez
-
 import sys
+
+from documentretriever import PubmedRetriever
 
 def handleCmdArg():
     maxNoArticles = 0
@@ -22,39 +22,22 @@ def handleCmdArg():
 	    if (topic == ''):
 		print("Please a supply a topic")
     return (maxNoArticles,topic)
-	
-def search(maxNoArticles, query):
-    Entrez.email = 'bogdan.stoian11@gmail.com'
-    handle = Entrez.esearch(db='pubmed', 
-                            sort='relevance', 
-                            retmax=maxNoArticles,
-                            retmode='xml', 
-                            term=query)
-    results = Entrez.read(handle)
-    return results
-
-def fetch_details(id_list):
-    ids = ','.join(id_list)
-    Entrez.email = 'bogdan.stoian11@gmail.com'
-    handle = Entrez.efetch(db='pubmed',
-                           retmode='xml',
-                           id=ids)
-    results = Entrez.read(handle)
-    return results
 
 if __name__ == '__main__':
     (maxNoArticles, topic) = handleCmdArg()
-    results = search(maxNoArticles, topic)
-    id_list = results['IdList']
-    papers = fetch_details(id_list)
+    pubmedRet = PubmedRetriever()
+    papers = pubmedRet.getDocumentsIf(topic, maxNoArticles)
     for i, paper in enumerate(papers):
         print("%d) %s" % (i+1, paper['MedlineCitation']['Article']['ArticleTitle']))
-    
-	# dump everything in a database just in case
-	# feed the papers array in another script
-
-	import io
-    	import json
-    	with io.FileIO("foobar.txt", "w") as file:
-	    file.write(json.dumps(paper, indent=2, separators=(',', ':')))
+        
+    # dump everything in a database just in case
+    # feed the papers array in another script
+    # print paper
+    # print paper['MedlineCitation']['DateCompleted']['Year']
+    # import io
+    # import json
+    # with io.FileIO("foobar.txt", "w") as file:
+    # dict = json.loads(json.dumps(paper, indent=2, separators=(',', ':')))
+    # print dict
+    # print dict['MedlineCitation']['DateCompleted']['Year']
 
