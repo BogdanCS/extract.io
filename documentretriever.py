@@ -17,7 +17,7 @@ class PubmedRetriever(DocumentRetriever):
         id_list = results['IdList']
         papers = self.__fetch_details(id_list)
         
-        return papers # Standard Python dictionary format
+        return papers['PubmedArticle'] # Standard Python dictionary format
 
     def __search(self, query, maxNumber):
         Entrez.email = 'bogdan.stoian11@gmail.com'

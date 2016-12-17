@@ -37,3 +37,4 @@ nactem.ac.uk
 [Topic models for MeSH research paper](http://www.ics.uci.edu/~newman/pubs/Newman-AI09.pdf)
 [Trends in Pubmed](./p954-moerchen.pdf)
 [Trends in Pubmed 2](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2656084/)
+[Extensions](https://bugra.github.io/work/notes/2015-02-21/topic-modeling-for-the-uninitiated/)
