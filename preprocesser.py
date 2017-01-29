@@ -9,10 +9,17 @@ import regex as re
 # - stemming (morphological analysis)
 
 # TODO
-# - initial acronym detection and expansion
-# - research how to deal with numbers/quantities. erase only quantities?
-# - chunking pre/pos TA?
-# - unify different forms (e.g NP4 APL and NP4-APL) pre/pos TA?
+# - do not remove upper case if whole word is upper case? (-> abbreviation)
+# - concatanate abstracts together?
+# - special handling of ' ?
+# - research how to deal with numbers/quantities. erase only quantities
+# - initial acronym detection and expansion - post TA?
+# - chunking pre/post TA?
+# - unify different forms (e.g NP4 APL and NP4-APL) pre/post TA?
+
+# Basically, I don't two different tokens with the same meaning e.g Patient, patient, patients
+# DI and diabetes or DI and insipidus have different meanings
+
 class Preprocesser:
     __metaclass__ = ABCMeta
 
@@ -51,4 +58,18 @@ class PubmedPreprocesser(Preprocesser):
         return regex.sub('', string)
 
     def removeCapitals(self, string):
-        return string.lower()
+        result = ""
+        for word in string.split():
+            if word.isupper():
+                result += word + " "
+            else:
+                result += word.lower() + " "
+        return result
+
+class TerMinePreprocesser(Preprocesser):
+    #def concatanateTexts(textList):
+
+    def oneSentencePerLine(text):
+        #TODO point might not mean end of sentence
+        return text.replace('.', '\n')
+            

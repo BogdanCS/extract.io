@@ -32,26 +32,10 @@ class MalletConverter:
                         for result in MalletConverter.__find(key, d):
                             yield result
 
-    #make it easy to adapt this
-    #e.g easy to change between different stemmers
     @staticmethod
     def __preprocess(prepro, line):
-        print line.encode('utf8')
+        #print line.encode('utf8')
         return prepro.stemWords(
                prepro.removeStopWords(
                prepro.removePunctuation(
                prepro.removeCapitals(line))))
-
-        # Remove capital case
-        #line = line.lower()
-        # Remove all non alphabetic chars
-        # re.sub(ur"\p{P}+", "", procLine)
-        #regex = re.compile('[^a-zA-Z ]')
-        #line = regex.sub('', line)
-        # Remove stopwords and stem
-        #filterLine = ""
-        #stemmer = SnowballStemmer("english")
-        #for word in line.split(): 
-        #    if word not in stopwords.words('english'):
-        #        filterLine += stemmer.stem(word) + " "
-        #return filterLine
