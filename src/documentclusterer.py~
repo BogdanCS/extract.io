@@ -1,0 +1,32 @@
+from abc import ABCMeta, abstractmethod   
+from operator import itemgetter
+
+class DocumentClusterer:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    # Returns pairs of cluster index - list of indexes of original documents
+    def getClusters(self, bowList, modelFeatures) : pass
+    
+
+class TopTopicClusterer:
+
+    def getClusters(self, bowList, modelFeatures):
+        clusters = {}
+        for i in range(0, len(bowList)-1):
+            bow = bowList[i]
+            topicDistrib = modelFeatures.get_document_topics(bow)
+            maxIdx = self.__getMaxTopicIndex(topicDistrib)
+            if (maxIdx not in clusters):
+                value = []
+                value.append(i)
+                clusters[maxIdx] = value
+            else:
+                clusters[maxIdx].append(i)
+        return clusters
+        
+    def __getMaxTopicIndex(self, topicDistrib):
+        return max(topicDistrib, key=itemgetter(1))[0]
+            
+
+# class KMeansClusterer:

@@ -54,3 +54,6 @@ nactem.ac.uk
 [D3.js main](http://tt-history.appspot.com/)
 [D3.js map](http://bl.ocks.org/lokesh005/7640d9b562bf59b561d6)
 
+#TODO
+
+1. Pass document name to the UI as well, along with the document URL

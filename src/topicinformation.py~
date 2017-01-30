@@ -1,0 +1,13 @@
+# Topic information
+# {   topic information is the rhs
+#    'topic_id' : dictionary {'words' - list of 5 words
+#                             'docs' - list of links to documents where is majority topic
+#                             'score'- how likely is to occur in the dataset
+#                            }
+# }
+
+class TopicInformation(object):
+    def __init__():
+        self.words = []
+        self.docs = []
+        self.score = 0

@@ -1,0 +1,34 @@
+import logging
+
+class TopicManager():
+    def __init__(self):
+        # to update with default model
+        # to update with a more clever cache
+        self.cachedTopicModel = []
+
+    def getTopics(self, req):
+        logging.info("getTopics()")
+        
+        pubmed = PubmedRetriever()
+        # TODO - Add the timestamps
+        # Retrieve abstracts
+        papers = pubmed.getDocumentsIf(req['keywords'], req['limit'])
+
+        # Create preprocesser
+        stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
+        # stemmer = SnowballStemmer("english") # algorithmic(Porter) stemmer
+        prepro = PubmedPreprocesser(stemmer)
+        
+        # Transform each document in a list of words
+        doc_low = []
+        for paper in papers:
+            # TODO make AbstractText global constant
+            doc_low.append(MalletConverter.getDataAsString(paper, prepro, 'AbstractText').split())
+            
+        # malletCorpus = MalletConverter.toMallet(papers, prepro, 'PMID', 'AbstractText')
+        
+        # TODO - multiple models
+        model = gensim.models.LdaModel.load('/static/models/training.lda')
+        # TODO - update async model.update(corpus)
+        
+        
