@@ -1,3 +1,4 @@
+import json
 import sys
 sys.path.insert(0, '/home/bogdan/dev/COMP30040/extract.io/src')
 
@@ -10,10 +11,12 @@ if __name__ == "__main__":
 
     topics = TopicManager().getTopics(req1)
 
-    for topic, extracted in topics.iteritems():
-        for word in topic.words:
+    for extracted in topics:
+        for word in extracted.words:
             print word,
         print
         for doc in extracted.docs:
             print doc
         print extracted.score
+
+    print json.dumps({"topics" : topics}, default=lambda o: o.__dict__)

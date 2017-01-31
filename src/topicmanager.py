@@ -7,8 +7,7 @@ from documentretriever import PubmedRetriever
 from preprocesser import PubmedPreprocesser
 from malletconverter import MalletConverter
 from documentclusterer import TopTopicClusterer
-from topicinformation import TopicBasicInfo
-from topicinformation import TopicExtractedInfo
+from topicinformation import TopicInformation
 
 class TopicManager():
     #def __init__(self):
@@ -65,7 +64,9 @@ class TopicManager():
         # is this copy necessary? topics = self....
         self.__getTopicsExtractedInfo(model, doc_bow, topics)
         
-        return topics
+        # Drop the topic ids as we don't need them anymore
+        topic_list = [ v for v in topics.values() ]
+        return topic_list
         
             # we might be interested in max topic, we might not - this could be decided in the UI
         #    topicComposition = model.get_document_topics(bow)
@@ -78,17 +79,24 @@ class TopicManager():
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.get_document_topics(bow)
             for topicId, prob in topicComposition:
-                basicInfo = TopicBasicInfo(topicId)
-                if(basicInfo not in topics):
-                    basicInfo.getTopicWords(model) 
-                    topics[basicInfo] = TopicExtractedInfo()
-                # Update topic score as well as we iterate through all the topics
-                topics[basicInfo].score = topics[basicInfo].score + prob
+                #basicInfo = TopicBasicInfo(topicId)
+                if(topicId not in topics):
+                    words = self.__getTopicWords(model, topicId) 
+                    topics[topicId] = TopicInformation(words)
+                # Update topic score 
+                topics[topicId].score = topics[topicId].score + prob
+                
         return topics
         
     def __getTopicsExtractedInfo(self, model, doc_bow, topics):
         # For each topic get the documents where that topic is predominant
         TopTopicClusterer().getDocClusters(doc_bow, model, topics)
             
-            
-        
+    def __getTopicWords(self, model, topicId):
+        output = []
+
+        topWords = model.show_topic(topicId, topn=5)
+        for word, prob in topWords:
+            output.append(word)
+
+        return output

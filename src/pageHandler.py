@@ -32,8 +32,8 @@ class RPCNewSearchHandler(webapp.RequestHandler):
             # Retrieve topics
             topics = TopicManager().getTopics(req)
 
-            # Set response in json format
-            self.response.out.write(json.dumps({"topicsInfo":topics}))
+            # Set json response
+            self.response.out.write(json.dumps({"topics" : topics}, default=lambda o: o.__dict__))
 
         except Exception, e:
             traceback.print_exc()

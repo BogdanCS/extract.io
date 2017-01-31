@@ -2,7 +2,6 @@ from abc import ABCMeta, abstractmethod
 from operator import itemgetter
 
 from globals import Globals
-from topicinformation import TopicBasicInfo
 
 #class DocumentClusterer:
 #    __metaclass__ = ABCMeta
@@ -18,10 +17,10 @@ class TopTopicClusterer:
         for docId, docData in doc_bow.iteritems():
             topicDistrib = modelFeatures.get_document_topics(docData)
             maxIdx = self.__getMaxTopicIndex(topicDistrib)
-            if (TopicBasicInfo(maxIdx) not in clusters):
+            if (maxIdx not in clusters):
                 raise Exception('Topic id not found')
             # Append document to the corresponding cluster identified by topic id
-            clusters[TopicBasicInfo(maxIdx)].docs.append(Globals.PUBMED_SEARCH_URL + str(docId))
+            clusters[maxIdx].docs.append(Globals.PUBMED_SEARCH_URL + str(docId))
         return clusters
         
     def __getMaxTopicIndex(self, topicDistrib):

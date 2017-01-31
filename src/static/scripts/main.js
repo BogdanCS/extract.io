@@ -5,11 +5,10 @@
     LAST_WEEK = 1,
     LAST_MONTH = 2,
     DATE = 3,
-    WOEID = 4,
     LIMIT = 50;
 
   var history = LAST_DAY,
-    woeid = 1,
+    keyword = "diabetes",
     response;
 
   var datepickerState = 0,
@@ -17,9 +16,9 @@
     activeTipsy = null;
 
   // Google Analytics events
-  $('a, .btn').on('click', function() {
-    ga('send', 'event', 'link', 'click', $(this).attr('id') || $(this).attr('class'));
-  });
+  //$('a, .btn').on('click', function() {
+  //  ga('send', 'event', 'link', 'click', $(this).attr('id') || $(this).attr('class'));
+  //});
 
   window.onload = function() {
 
@@ -28,7 +27,7 @@
      */
     $("#datepicker").datepicker({
       dateFormat: "dd.mm.y",
-      minDate: new Date(1373576400000), // 12 July 2013 Fri
+      minDate: new Date(757382400), // 1 January 1994
       maxDate: new Date(),
       onSelect: function(date) {
         setHistory(this, DATE);
@@ -37,10 +36,10 @@
     $("#datepicker").datepicker("setDate", new Date());
 
     /*
-     * initialize trends
+     * initialize topics
      */
     displayLoading();
-    getTrends();
+    getTopics();
 
     /*
      * add moveToFront function to d3.js
@@ -77,21 +76,19 @@
     return document.getElementById(id);
   }
 
-  function getTrends() {
+  function getTopics() {
 
     // create url
     var pathArray = document.URL.split('/');
-    var url = pathArray[0] + "//" + pathArray[2] + "/rpc?woeid=" + woeid;
+    var url = pathArray[0] + "//" + pathArray[2] + "/rpcNewSearch?keywords=" + keyword;
 
     if (history == DATE) {
       startDate = Math.floor(jQuery("#datepicker").datepicker("getDate")
         .getTime() / 1000);
       endDate = startDate + 86400;
-      url += "&timestamp=" + startDate + "&end_timestamp=" + endDate;
-    } else {
-      url += "&history=" + getHistoryText();
-    }
-
+      url += "&start_date=" + startDate + "&end_date=" + endDate;
+    } 
+     
     url += "&limit=" + LIMIT;
 
     // make call
@@ -103,11 +100,8 @@
 
         if (http_request.status == 200) {
           onSuccess(http_request.responseText);
-        } else if (http_request.status == 503) {
-          onFailure("Request limit exceeded. Try tomorrow! Or get in touch with me via @mustilica.");
-          /* Show donation button */
-          //$(".donation").show();
-        } else {
+        } 
+        else {
           onFailure();
         }
       }
@@ -129,44 +123,44 @@
     }
 
     if (response == "") {
-      _("trends").innerHTML = "YOU SHOULD ENTER VALID INPUT!";
+      _("topics").innerHTML = "YOU SHOULD ENTER VALID INPUT!";
       return;
     }
 
     if (response.trends.length == 0) {
-      _("trends").innerHTML = "NO RECORD! PLEASE PICK A DATE AFTER JULY, 12 2013.";
+      _("topics").innerHTML = "NO TOPIC FOUND!";
       return;
     }
 
-    drawTrends();
+    drawTopics();
     setCurrentChartExplanation();
     stopInitialAnimation = 0;
     setTimeout(startInitialAnimation, 3000);
   }
 
   function onFailure(msg) {
-    _("trends").innerHTML = msg || "YOU CRASHED IT!"
+    _("topics").innerHTML = msg || "YOU CRASHED IT!"
   }
 
   function displayLoading() {
-    $("#trends").empty().append('<span>Loading...</span><div id="loading-area"><div class="spinner"></div></div>');
+    $("#topics").empty().append('<span>Loading...</span><div id="loading-area"><div class="spinner"></div></div>');
   }
 
   function hideLoading() {
-    $("#trends").empty()
+    $("#topics").empty()
   }
 
   /**
    * Draws chart
    */
-  function drawTrends(callback) {
+  function drawTopics(callback) {
     currentChart.draw(callback);
   }
 
   /**
    * Removes chart
    */
-  function removeTrends(callback) {
+  function removeTopics(callback) {
     currentChart.remove(callback);
   }
 
@@ -210,7 +204,7 @@
    * Set current chart explanation
    */
   function setCurrentChartExplanation(message) {
-    var message = "Trending topics";
+    var message = "Topics extracted from medical abstracts published";
 
     if (history == LAST_DAY) {
       message += " within last 24 hours";
@@ -225,19 +219,19 @@
         .substring(4);
     }
 
-    if (woeid == 1) {
-      message += " in World";
+    if (keyword == "diabetes") {
+      message += "about Diabetes";
     } else {
-      message += " in Turkey";
+      message += "about Cancer";
     }
 
-    $('#trends').prepend("<span>" + message + "</span>");
+    $('#topics').prepend("<span>" + message + "</span>");
   }
 
   function setHistory(node, h) {
     if (history != h || h == DATE) {
       history = h;
-      removeTrends(getTrends);
+      removeTopics(getTopics);
 
       // change style
       changeHistoryBtnStyle(node, h);
@@ -245,10 +239,10 @@
     return false;
   }
 
-  function setWoeid(node, r) {
-    if (woeid != r) {
-      woeid = r;
-      removeTrends(getTrends);
+  function setKeyword(node, r) {
+    if (keyword != r) {
+      keyword = r;
+      removeTopics(getTopics);
 
       // change style
       changeRegionBtnStyle(node);
@@ -316,7 +310,7 @@
   var charts = {
     bubbleChart: function() {
 
-      var area = _("trends"),
+      var area = _("topics"),
         force,
         node,
         svg;
@@ -329,11 +323,16 @@
           var w = area.offsetWidth,
             h = area.offsetHeight;
 
-          var nodes = response.trends,
-            maxNodeValue = nodes[0].value,
+	  var nodes = response.topics;
+	  var maxNodeValue = nodes[0].score; // to be updated
+          var fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
+          var radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
+	    
+          //var nodes = response.trends,
+          //  maxNodeValue = nodes[0].value,
             //fill = d3.scale.category10(),
-            fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
-            radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
+          //  fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
+          //  radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
 
           force = d3.layout.force()
             .gravity(0.03)
@@ -342,7 +341,7 @@
             .size([w, h])
             .on("tick", tick).start();
 
-          svg = d3.select("#trends").append("svg")
+          svg = d3.select("#topics").append("svg")
             .attr("width", w)
             .attr("height", h);
 
@@ -362,7 +361,7 @@
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
-              return d.value / radiusCoefficient;
+              return d.score / radiusCoefficient; // ?
             });
 
           svg.style("opacity", 1e-6)
@@ -387,7 +386,7 @@
               sel.moveToFront();
 
               var d = this.__data__;
-              return '<div class="tipsy-topic">' + d.name + '</div><span class="tipsy-time">' + pretifyDuration(d.value) + '</span>';
+              return '<div class="tipsy-topic">' + "WORDS" + '</div><span class="tipsy-time">' + pretifyDuration(d.score) + '</span>';
             }
           });
 
@@ -406,12 +405,12 @@
           }
 
           function charge(d) {
-            return -Math.pow(d.value / (radiusCoefficient * 2), 2.0) / 8;
+            return -Math.pow(d.score / (radiusCoefficient * 2), 2.0) / 8;
           }
 
           function assignColor(d) {
             //console.log(d.value, maxNodeValue, Math.floor(d.value / (maxNodeValue / 5)));
-            d.color = fill(Math.floor(d.value / (maxNodeValue / 5)));
+            d.color = fill(Math.floor(d.score / (maxNodeValue / 5)));
             return d.color;
           }
 
@@ -450,12 +449,12 @@
   /**
    * UI element bindings
    */
-  jQuery("#trRegionBtn").click(function() {
-    setWoeid(this, 23424969);
+  jQuery("#cancerBtn").click(function() {
+    setKeyword(this, "cancer");
   });
 
-  jQuery("#worldRegionBtn").click(function() {
-    setWoeid(this, 1);
+  jQuery("#diabetesBtn").click(function() {
+    setKeyword(this, "diabetes");
   });
 
   jQuery("#lastDayBtn").click(function() {
