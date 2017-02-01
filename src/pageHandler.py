@@ -40,6 +40,16 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             # Retrieve topics
             topics = TopicManager().getTopics(req)
 
+            #for extracted in topics:
+            #    for word in extracted.words:
+            #        print word,
+            #    print
+            #    for doc in extracted.docs:
+            #        print doc
+            #    print extracted.score
+
+            print json.dumps({"topics" : topics}, default=lambda o: o.__dict__)
+            
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics}, default=lambda o: o.__dict__))
 

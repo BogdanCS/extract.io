@@ -52,7 +52,7 @@
   }
 
   window.onerror = function() {
-    _("trends").innerHTML = "Ooops! Something went wrong!"
+    _("topics").innerHTML = "Ooops! Something went wrong!"
   }
 
   if (!window.XMLHttpRequest)
@@ -127,7 +127,7 @@
       return;
     }
 
-    if (response.trends.length == 0) {
+    if (response.topics.length == 0) {
       _("topics").innerHTML = "NO TOPIC FOUND!";
       return;
     }
@@ -220,9 +220,9 @@
     }
 
     if (keyword == "diabetes") {
-      message += "about Diabetes";
+      message += " about Diabetes";
     } else {
-      message += "about Cancer";
+      message += " about Cancer";
     }
 
     $('#topics').prepend("<span>" + message + "</span>");
@@ -326,7 +326,7 @@
 	  var nodes = response.topics;
 	  var maxNodeValue = nodes[0].score; // to be updated
           var fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
-          var radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
+          var radiusCoefficient = (2500 / w) * (maxNodeValue / 50);
 	    
           //var nodes = response.trends,
           //  maxNodeValue = nodes[0].value,
@@ -349,6 +349,7 @@
             .enter().append("circle")
             .attr("class", "node")
             .attr("cx", function(d) {
+	  console.log(d.x)
               return d.x;
             }).attr("cy", function(d) {
               return d.y;
@@ -361,6 +362,7 @@
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
+	  console.log(d.score)
               return d.score / radiusCoefficient; // ?
             });
 
@@ -386,7 +388,7 @@
               sel.moveToFront();
 
               var d = this.__data__;
-              return '<div class="tipsy-topic">' + "WORDS" + '</div><span class="tipsy-time">' + pretifyDuration(d.score) + '</span>';
+              return '<div class="tipsy-topic">' + getWords(d.words) + '</div><span class="tipsy-time">' + pretifyDuration((d.score*10).toFixed(3)) + '</span>';
             }
           });
 
@@ -420,8 +422,20 @@
             } else if (value > 59) {
               return Math.floor(value / 60) + " h. " + pretifyDuration(value % 60);
             } else {
-              return value + " min."
+              return value + " avg prob."
             }
+          }
+	    
+          function getWords(wordList) 
+	  {
+	      var listLength = wordList.length;
+	      var output = ""
+	      for (var idx = 0; idx < listLength; idx++)
+	      {
+		  output += wordList[idx] + ' '
+	      }
+
+	      return output
           }
 
         },

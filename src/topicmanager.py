@@ -83,7 +83,7 @@ class TopicManager():
                     words = self.__getTopicWords(model, topicId) 
                     topics[topicId] = TopicInformation(words)
                 # Update topic score 
-                topics[topicId].score = topics[topicId].score + prob
+                topics[topicId].score = topics[topicId].score + (prob/len(topicComposition))
                 
         return topics
         
