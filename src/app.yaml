@@ -23,6 +23,9 @@ handlers:
   static_dir: static
   expiration: "7d"
 
+- url: /cron
+  script: cron.application
+
 - url: /.*
   script: pageHandler.application
 

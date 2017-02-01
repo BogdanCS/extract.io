@@ -21,11 +21,14 @@ class PubmedRetriever(DocumentRetriever):
 
     def __search(self, query, maxNumber):
         Entrez.email = 'bogdan.stoian11@gmail.com'
+        print query
         handle = Entrez.esearch(db='pubmed', 
                                 sort='relevance', 
                                 retmax=maxNumber,
                                 retmode='xml', 
                                 term=query)
+        print "hell yeah"
+        print handle
         results = Entrez.read(handle)
         return results
 

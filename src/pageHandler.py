@@ -3,22 +3,30 @@ import os
 import traceback
 import logging
 
-from google.appengine.ext import webapp
+import webapp2
 from google.appengine.ext.webapp import template
-from google.appengine.ext.webapp.util import run_wsgi_app
+#from paste import httpserver
 from topicmanager import TopicManager
 
-class MainPage(webapp.RequestHandler):
+#import jinja2
+#JINJA_ENVIRONMENT = jinja2.Environment(
+#    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+#    extensions=['jinja2.ext.autoescape'],
+#    autoescape=True)
+
+class MainPage(webapp2.RequestHandler):
     """ Renders the main template. """
 
     def get(self):
-
         template_values = {}
         path = os.path.join(os.path.dirname(__file__), 'index.html')
         self.response.out.write(template.render(path, template_values))
+        
+        #template = JINJA_ENVIRONMENT.get_template(path)
+        #self.response.out.write(template.render(template_values))
 
 
-class RPCNewSearchHandler(webapp.RequestHandler):
+class RPCNewSearchHandler(webapp2.RequestHandler):
     """ Process RPC requests for new search. """
 
     def get(self):
@@ -41,9 +49,10 @@ class RPCNewSearchHandler(webapp.RequestHandler):
 
 #class RPCGetXHandler(webapp.RequestHandler):
 #    """ Process RPC requests for getting X. """
-    
-application = webapp.WSGIApplication([('/rpcNewSearch', RPCNewSearchHandler),
-                                      ('/.*', MainPage)], debug=False)
+
+application = webapp2.WSGIApplication([('/rpcNewSearch', RPCNewSearchHandler),
+                                       ('/.*', MainPage)], debug=True)
 
 if __name__ == "__main__":
-    run_wsgi_app(application)
+    application.run()
+    #httpserver.serve(application, host='127.0.0.1', port='8080')

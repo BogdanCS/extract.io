@@ -1,0 +1,4 @@
+cron:
+- description: update train data 
+  url: /cron
+  schedule: every 24 hours

@@ -1,6 +1,6 @@
 import logging
-import hunspell
 import gensim
+import hunspell
 
 from globals import Globals
 from documentretriever import PubmedRetriever
@@ -79,7 +79,6 @@ class TopicManager():
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.get_document_topics(bow)
             for topicId, prob in topicComposition:
-                #basicInfo = TopicBasicInfo(topicId)
                 if(topicId not in topics):
                     words = self.__getTopicWords(model, topicId) 
                     topics[topicId] = TopicInformation(words)

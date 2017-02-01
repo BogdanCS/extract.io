@@ -7,7 +7,7 @@ if __name__ == "__main__":
     req1 = {'keywords': 'diabetes',
             'startDate': '01/03/2010',
             'endDate': '03/07/2016',
-            'limit' : 10}
+            'limit' : 50}
 
     topics = TopicManager().getTopics(req1)
 

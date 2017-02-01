@@ -1,0 +1,17 @@
+../smart_open/gzipstreamfile.py
+../smart_open/__init__.py
+../smart_open/smart_open_lib.py
+../smart_open/tests/__init__.py
+../smart_open/tests/test_gzipstreamfile.py
+../smart_open/tests/test_smart_open.py
+../smart_open/gzipstreamfile.pyc
+../smart_open/__init__.pyc
+../smart_open/smart_open_lib.pyc
+../smart_open/tests/__init__.pyc
+../smart_open/tests/test_gzipstreamfile.pyc
+../smart_open/tests/test_smart_open.pyc
+SOURCES.txt
+PKG-INFO
+dependency_links.txt
+top_level.txt
+requires.txt

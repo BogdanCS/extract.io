@@ -1,5 +1,9 @@
 from abc import ABCMeta, abstractmethod   
 from nltk.corpus import stopwords
+import os
+import nltk
+nltk.data.path.append(os.path.join(os.path.dirname(__file__), 'lib', 'nltk', 'nltk_data'))
+
 from string import punctuation
 import regex as re
 

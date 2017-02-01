@@ -325,7 +325,7 @@
 
 	  var nodes = response.topics;
 	  var maxNodeValue = nodes[0].score; // to be updated
-          var fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
+          var fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
           var radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
 	    
           //var nodes = response.trends,
