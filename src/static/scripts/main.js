@@ -1,4 +1,3 @@
-/*! Copyright (c) 2013 Mustafa İlhan released under the MIT license */
 (function() {
 
   var LAST_DAY = 0,
@@ -14,11 +13,6 @@
   var datepickerState = 0,
     stopInitialAnimation = 0,
     activeTipsy = null;
-
-  // Google Analytics events
-  //$('a, .btn').on('click', function() {
-  //  ga('send', 'event', 'link', 'click', $(this).attr('id') || $(this).attr('class'));
-  //});
 
   window.onload = function() {
 
@@ -311,7 +305,7 @@
     bubbleChart: function() {
 
       var area = _("topics"),
-        force,
+        simulation,
         node,
         svg;
 
@@ -325,8 +319,8 @@
 
 	  var nodes = response.topics;
 	  var maxNodeValue = nodes[0].score; // to be updated
-          var fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
-          var radiusCoefficient = (2500 / w) * (maxNodeValue / 50);
+          var fill = d3.scaleOrdinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
+          var radiusCoefficient = (3500 / w) * (maxNodeValue / 50);
 	    
           //var nodes = response.trends,
           //  maxNodeValue = nodes[0].value,
@@ -334,12 +328,12 @@
           //  fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
           //  radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
 
-          force = d3.layout.force()
-            .gravity(0.03)
-            .charge(charge)
-            .nodes(nodes)
-            .size([w, h])
-            .on("tick", tick).start();
+         simulation = d3.forceSimulation()
+		.force("collide",d3.forceCollide( function(d){return d.r + 8 }).iterations(30) )
+		.force("charge", d3.forceManyBody())
+		.force("center", d3.forceCenter(w / 2, h / 2))
+		.force("y", d3.forceY(0))
+		.force("x", d3.forceX(0))
 
           svg = d3.select("#topics").append("svg")
             .attr("width", w)
@@ -349,7 +343,6 @@
             .enter().append("circle")
             .attr("class", "node")
             .attr("cx", function(d) {
-	  console.log(d.x)
               return d.x;
             }).attr("cy", function(d) {
               return d.y;
@@ -357,13 +350,25 @@
               return assignColor(d);
             }).style("stroke", function(d, i) {
               return d3.rgb(d.color).darker(2);
-            }).call(force.drag);
+            }).call(d3.drag()
+		    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));  
 
+	    var ticked = function() {
+            node
+                .attr("cx", function(d) { return d.x; })
+                .attr("cy", function(d) { return d.y; });
+        }  
+
+	  simulation
+            .nodes(nodes)
+            .on("tick", ticked);
+	    
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
-	  console.log(d.score)
-              return d.score / radiusCoefficient; // ?
+              return d.score / radiusCoefficient;
             });
 
           svg.style("opacity", 1e-6)
@@ -391,24 +396,128 @@
               return '<div class="tipsy-topic">' + getWords(d.words) + '</div><span class="tipsy-time">' + pretifyDuration((d.score*10).toFixed(3)) + '</span>';
             }
           });
+	    
+	  // On click event for cicles
+	  $('circle').click(function ()
+	  {
+	      var d = this.__data__;
+	      drawDocs(d.docs)
+	      drawTemporalTrend(d.years)
+	  })
 
-          function tick(e) {
-            var k = -0.1 * e.alpha;
-            nodes.forEach(function(o, i) {
-              o.y += k;
-              o.x += k;
-            });
+	  function drawDocs(docs)
+	  {
+	     // Clear docs area
+	     var area = _("docs")
+	     area.innerHTML = null;
 
-            node.attr("cx", function(d) {
-              return d.x;
-            }).attr("cy", function(d) {
-              return d.y;
-            });
-          }
+	     listLength = docs.length;
+	     // Consider randomising the documents displayed
+	     for (var idx = 0; idx < listLength && idx < 6; idx++)
+	     {
+		 area.innerHTML += "<a href=\"" + docs[idx] + "\"> Document #" + idx + "</a>";
+	     }
+	  }
 
-          function charge(d) {
-            return -Math.pow(d.score / (radiusCoefficient * 2), 2.0) / 8;
-          }
+	  function drawTemporalTrend(years)
+	  {
+	      // Should either use integers or pass the whole date
+	      var data = new Array();
+	      for (var idx = 0; idx < years.length; idx++)
+	      {
+		  data.push(new Date(years[idx], 1, 1))
+	      }
+
+	      var area = _("tempHist");
+	      // Clear draw area.
+	      area.innerHTML = null;
+
+	      // Create initial svg
+              var svg = d3.select("#tempHist").append("svg")
+		  .attr("width", area.offsetWidth*2)
+		  .attr("height",area.offsetHeight/3);
+	      
+	      var margin = {top: 10, right: 30, bottom: 30, left: 30};
+	      var width  = svg.attr("width") - margin.left - margin.right;
+	      var height = svg.attr("height") - margin.top - margin.bottom;
+	      var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	      var x = d3.scaleTime()
+	        .domain([new Date(2006, 1, 1), new Date(2017, 1, 1)]) //to update to start date, end date
+		.rangeRound([0, width]);
+
+	      var bins = d3.histogram()
+		.domain(x.domain())
+		.thresholds(x.ticks(d3.timeYear))
+		(data);
+
+	      var y = d3.scaleLinear()
+		.domain([0, d3.max(bins, function(d) { return d.length; })])
+		.range([height, 0]);
+
+	      var bar = g.selectAll(".bar")
+		 .data(bins)
+		 .enter().append("g")
+		 .attr("class", "bar")
+		 .attr("transform", function(d) { return "translate(" + x(d.x0) + "," + y(d.length) + ")"; });
+
+	      bar.append("rect")
+		 .attr("x", 1)
+		 .attr("width", x(bins[0].x1) - x(bins[0].x0) - 1)
+		 .attr("height", function(d) { return height - y(d.length); });
+
+	      if(data.length > 0)
+	      {
+		  g.append("g")
+		      .attr("class", "axisBlue")
+		      .attr("transform", "translate(0," + height + ")")
+		      .call(d3.axisBottom(x));
+		  g.append("g")
+		      .attr("class", "axisBlue")
+		      .call(d3.axisLeft(y));
+	      }
+	  }
+
+
+	 function dragstarted(d) {
+	     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+		d.fx = d.x;
+		d.fy = d.y;
+	    }
+
+	 function dragged(d) {
+		d.fx = d3.event.x;
+		d.fy = d3.event.y;
+	    }
+
+	 function dragended(d) {
+		if (!d3.event.active) simulation.alphaTarget(0);
+		d.fx = null;
+		d.fy = null;
+	    } 
+          //function tick(e) {
+          //  var k = -0.1 * e.alpha;
+          //  nodes.forEach(function(o, i) {
+          //    o.y += k;
+          //    o.x += k;
+          //  });
+
+          //  node.attr("cx", function(d) {
+          //    return d.x;
+          //  }).attr("cy", function(d) {
+          //    return d.y;
+          //  });
+          //}
+
+	  //function gravity(alpha) {
+	  //	return function(d) {
+	  //	    d.y += (d.cy - d.y) * alpha;
+	  //	    d.x += (d.cx - d.x) * alpha;}
+	  //};
+
+          //function charge(d) {
+          //  return -Math.pow(d.score / (radiusCoefficient * 2), 2.0) / 8;
+          //}
 
           function assignColor(d) {
             //console.log(d.value, maxNodeValue, Math.floor(d.value / (maxNodeValue / 5)));
@@ -440,7 +549,7 @@
 
         },
         remove: function(callback) {
-          force.gravity(0.001).resume();
+          compForce.force("gravity", gravity(0.001)).restart();
 
           node.transition()
             .duration(1000)
@@ -486,7 +595,6 @@
   jQuery("#datepickerBtn").click(function() {
     toggleDatepicker();
   });
-
 })();
 
 // TODO onresize

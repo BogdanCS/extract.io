@@ -7,6 +7,7 @@ from documentretriever import PubmedRetriever
 from preprocesser import PubmedPreprocesser
 from malletconverter import MalletConverter
 from documentclusterer import TopTopicClusterer
+from documentinformation import DocumentInformation
 from topicinformation import TopicInformation
 
 class TopicManager():
@@ -32,26 +33,20 @@ class TopicManager():
         # Do we need to merge with initial corpus?
         
         # Transform each document in a bag of words, identify the bag of words by the initial doc id
-        doc_bow = {}
+        # Also keep the publish year for each doc
+        docs = {}
         for paper in papers:
             # We might want to set allow_update = true
             # Swallow exceptions due to invalid data
             try:
-                docId = MalletConverter.getDocId(Globals.PUBMED_ID_FIELD_NAME, paper)
-                docData = bowConverter.doc2bow(MalletConverter.getDataAsString(
-                    Globals.PUBMED_ABSTRACT_FIELD_NAME, prepro, paper ).split())
-                doc_bow[docId] = docData
+                docId = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
+                docInfo = DocumentInformation(bowConverter.doc2bow(MalletConverter.getDataAsString(
+                    Globals.PUBMED_ABSTRACT_FIELD_NAME, prepro, paper).split()))
+                docInfo.year = MalletConverter.getField(Globals.PUBMED_PUBLISH_YEAR_FIELD_NAME, paper)
+                docs[docId] = docInfo
             except StopIteration:
-                logging.info("Abstranct not found")
-                print "Abstract not found"
+                logging.info("Abstract not found")
 
-            #doc_bow.append(bowConverter.doc2bow(MalletConverter.getDataAsString(paper, prepro, 'AbstractText').split()))
-
-        # Create bow dictionary
-        # doc_bow.add_documents(doc_low)
-
-        # malletCorpus = MalletConverter.toMallet(papers, prepro, 'PMID', 'AbstractText')
-        
         # TODO - multiple models
         # have this loaded?
         model = gensim.models.LdaModel.load(Globals.TRAINED_MODEL_PATH)
@@ -59,13 +54,19 @@ class TopicManager():
         
         # TopicBasicInfo -> ExtractedBasicInfo mapping
         # Retrieve topic basic information from our document set
-        topics = self.__getTopicsBasicInfo(model, doc_bow)
+        topics = self.__getTopicsBasicInfo(model, docs)
         # Extract information about topics
         # is this copy necessary? topics = self....
-        self.__getTopicsExtractedInfo(model, doc_bow, topics)
+        self.__getTopicsExtractedInfo(model, docs, topics)
         
         # Drop the topic ids as we don't need them anymore
-        topic_list = [ v for v in topics.values() ]
+        # Convert the binary tree container in which we store years
+        # to a regular list so we can pass it to the UI
+        topic_list = [] 
+        for v in topics.values():
+            v.finaliseYears()
+            topic_list.append(v)
+
         return topic_list
         
             # we might be interested in max topic, we might not - this could be decided in the UI
@@ -73,11 +74,11 @@ class TopicManager():
         #    for topicId, prob in topicComposition:
         #        if(
             
-    def __getTopicsBasicInfo(self, model, doc_bow):
+    def __getTopicsBasicInfo(self, model, docs):
         topics = {}
-        for bow in doc_bow.itervalues():
+        for doc in docs.itervalues():
             # topicComposition a list of tuples (topic id, probability)
-            topicComposition = model.get_document_topics(bow)
+            topicComposition = model.get_document_topics(doc.bow)
             for topicId, prob in topicComposition:
                 if(topicId not in topics):
                     words = self.__getTopicWords(model, topicId) 
@@ -87,9 +88,9 @@ class TopicManager():
                 
         return topics
         
-    def __getTopicsExtractedInfo(self, model, doc_bow, topics):
+    def __getTopicsExtractedInfo(self, model, docs, topics):
         # For each topic get the documents where that topic is predominant
-        TopTopicClusterer().getDocClusters(doc_bow, model, topics)
+        TopTopicClusterer().getDocClusters(docs, model, topics)
             
     def __getTopicWords(self, model, topicId):
         output = []

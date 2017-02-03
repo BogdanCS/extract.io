@@ -80,6 +80,41 @@ h1 a:visited {
   text-align: center;
   color: #888;
 }
+.tempHist {
+  height: 50%;
+  text-align: center;
+  color: #888;
+}
+
+.bar rect {
+  fill: steelblue;
+}
+
+.axisBlue line {
+  stroke: steelblue;
+  fill: steelblue;
+}
+
+.axisBlue path {
+  stroke: steelblue;
+}
+
+.axisBlue text {
+  fill: steelblue;
+}
+
+.bar text {
+  fill: #fff;
+  font: 10px sans-serif;
+}
+
+.docs {
+  position: absolute;
+  top: 200px;
+  text-align: center;
+  color: #000;
+  background: #000 url('static/img/square_back.png') repeat;
+}
 header {}
 footer {
   position: fixed;

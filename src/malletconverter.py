@@ -19,14 +19,15 @@ class MalletConverter:
         return output
         
     # Preprocess the document and transform it in a string
+    # TODO : Refactor this component and move out the following functions?
     @staticmethod
     def getDataAsString(dataField, prepro, doc):
         return MalletConverter.__preprocess(prepro, MalletConverter.__find(dataField, doc).next())
 
     @staticmethod
-    def getDocId(idField, doc):
-        return MalletConverter.__find(idField, doc).next()
-
+    def getField(field, doc):
+        return MalletConverter.__find(field, doc).next()
+        
     @staticmethod
     def __find(key, doc):
         if hasattr(doc, 'iteritems'):

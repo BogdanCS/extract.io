@@ -27,8 +27,6 @@ class PubmedRetriever(DocumentRetriever):
                                 retmax=maxNumber,
                                 retmode='xml', 
                                 term=query)
-        print "hell yeah"
-        print handle
         results = Entrez.read(handle)
         return results
 

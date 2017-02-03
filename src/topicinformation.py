@@ -20,10 +20,20 @@
 #    def __ne__(self, other):
 #        return not self.__eq__(other)
 
+from sortedcontainers import SortedList
+
 class TopicInformation(object):
     def __init__(self, words):
         self.words = words
         self.docs = []
+        # The years when the documents stored in self.docs have been published
+        # Keep duplicate values so we can create a histogram for temporal trends / topic
+        self.years = SortedList()
         self.score = 0
+        
+    # No longer need for the SortedList
+    # Convert to regular list
+    def finaliseYears(self):
+        self.years = [y for y in self.years]
 
     
