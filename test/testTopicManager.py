@@ -17,6 +17,8 @@ if __name__ == "__main__":
         print
         for doc in extracted.docs:
             print doc
+	for year in extracted.years:
+	    print year
         print extracted.score
 
     print json.dumps({"topics" : topics}, default=lambda o: o.__dict__)

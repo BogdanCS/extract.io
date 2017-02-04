@@ -304,42 +304,42 @@
   var charts = {
     bubbleChart: function() {
 
-      var area = _("topics"),
-        simulation,
-        node,
-        svg;
+      var area = _("topics");
 
       return {
         draw: function() {
-          // Clear draw area.
-          area.innerHTML = null;
+           // Clear draw area.
+           area.innerHTML = null;
 
-          var w = area.offsetWidth,
-            h = area.offsetHeight;
+          var w = area.offsetWidth;
+          var h = area.offsetHeight;
 
+          var svg = d3.select("#topics").append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+	  // Links - forces
+	  var links = response.links;
+	  var simulation = d3.forceSimulation()
+		.force("link", d3.forceLink().id(function(d) { return d.uid; }))
+		.force("charge", d3.forceManyBody())
+		.force("center", d3.forceCenter(w / 2, h / 2));
+
+	  var link = svg.append("g")
+		.attr("class", "links")
+		.selectAll("line")
+		.data(links)
+		.enter().append("line")
+		.attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+	  // Topics - nodes
 	  var nodes = response.topics;
 	  var maxNodeValue = nodes[0].score; // to be updated
           var fill = d3.scaleOrdinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
           var radiusCoefficient = (3500 / w) * (maxNodeValue / 50);
-	    
-          //var nodes = response.trends,
-          //  maxNodeValue = nodes[0].value,
-            //fill = d3.scale.category10(),
-          //  fill = d3.scale.ordinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']),
-          //  radiusCoefficient = (1000 / w) * (maxNodeValue / 50);
-
-         simulation = d3.forceSimulation()
-		.force("collide",d3.forceCollide( function(d){return d.r + 8 }).iterations(30) )
-		.force("charge", d3.forceManyBody())
-		.force("center", d3.forceCenter(w / 2, h / 2))
-		.force("y", d3.forceY(0))
-		.force("x", d3.forceX(0))
-
-          svg = d3.select("#topics").append("svg")
-            .attr("width", w)
-            .attr("height", h);
-
-          node = svg.selectAll(".node").data(nodes)
+	     
+          var node = svg.selectAll(".node")
+	    .data(nodes)
             .enter().append("circle")
             .attr("class", "node")
             .attr("cx", function(d) {
@@ -355,20 +355,30 @@
                     .on("drag", dragged)
                     .on("end", dragended));  
 
-	    var ticked = function() {
-            node
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; });
-        }  
-
 	  simulation
             .nodes(nodes)
             .on("tick", ticked);
 	    
+	  simulation.force("link")
+	    .links(links);
+	    
+	  function ticked() 
+	  {
+	      link
+		  .attr("x1", function(d) { return d.source.x; })
+		  .attr("y1", function(d) { return d.source.y; })
+		  .attr("x2", function(d) { return d.target.x; })
+		  .attr("y2", function(d) { return d.target.y; });
+
+	      node
+		  .attr("cx", function(d) { return d.x; })
+		  .attr("cy", function(d) { return d.y; });
+	  }
+	    
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
-              return d.score / radiusCoefficient;
+		return d.score / radiusCoefficient;
             });
 
           svg.style("opacity", 1e-6)
@@ -549,7 +559,7 @@
 
         },
         remove: function(callback) {
-          compForce.force("gravity", gravity(0.001)).restart();
+          //compForce.force("gravity", gravity(0.001)).restart();
 
           node.transition()
             .duration(1000)

@@ -37,21 +37,27 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                     'endDate': self.request.get('end_date', '0'),
                     'limit': self.request.get('limit')}
 
-            # Retrieve topics
-            topics = TopicManager().getTopics(req)
+            # Retrieve topics and links
+            (topics, links) = TopicManager().getTopics(req)
 
             #for extracted in topics:
-            #    for word in extracted.words:
-            #        print word,
-            #    print
+            #    #for word in extracted.words:
+            #    #    print word,
+            #    #print
             #    for doc in extracted.docs:
             #        print doc
-            #    print extracted.score
+            #    #print extracted.score
+            #for link in links:
+            #    print link.source,
+            #    print link.target,
+            #    print link.value
 
-            print json.dumps({"topics" : topics}, default=lambda o: o.__dict__)
+            print json.dumps({"topics" : topics,
+                              "links"  : links}, default=lambda o: o.__dict__)
             
             # Set json response
-            self.response.out.write(json.dumps({"topics" : topics}, default=lambda o: o.__dict__))
+            self.response.out.write(json.dumps({"topics" : topics,
+                                                "links"  : links}, default=lambda o: o.__dict__))
 
         except Exception, e:
             traceback.print_exc()

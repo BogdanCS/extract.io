@@ -9,6 +9,8 @@ from malletconverter import MalletConverter
 from documentclusterer import TopTopicClusterer
 from documentinformation import DocumentInformation
 from topicinformation import TopicInformation
+from linkinformation import LinkInformation
+from topiclinker import SimpleTopicLinker
 
 class TopicManager():
     #def __init__(self):
@@ -52,22 +54,28 @@ class TopicManager():
         model = gensim.models.LdaModel.load(Globals.TRAINED_MODEL_PATH)
         # TODO - update async model.update(corpus)
         
-        # TopicBasicInfo -> ExtractedBasicInfo mapping
-        # Retrieve topic basic information from our document set
-        topics = self.__getTopicsBasicInfo(model, docs)
+        # Extract basic information from our document set about each topic
+        (topics, links) = self.__getTopicsBasicInfo(model, docs)
         # Extract information about topics
         # is this copy necessary? topics = self....
-        self.__getTopicsExtractedInfo(model, docs, topics)
+        # links = self.__getTopicsExtractedInfo(model, docs, topics)
         
-        # Drop the topic ids as we don't need them anymore
+        # Drop the topic id keys as we don't need them anymore
         # Convert the binary tree container in which we store years
         # to a regular list so we can pass it to the UI
         topic_list = [] 
         for v in topics.values():
             v.finaliseYears()
             topic_list.append(v)
-
-        return topic_list
+        
+        # Convert link list dictionary to a simple list of LinkInformation
+        link_list = []
+        for (source, target), values in links.iteritems():
+            link_list.append(LinkInformation(source, 
+                                             target, 
+                                             SimpleTopicLinker().getFinalValue(values)))
+        
+        return (topic_list, link_list)
         
             # we might be interested in max topic, we might not - this could be decided in the UI
         #    topicComposition = model.get_document_topics(bow)
@@ -75,22 +83,33 @@ class TopicManager():
         #        if(
             
     def __getTopicsBasicInfo(self, model, docs):
+        # key - topic id
+        # value - TopicInformation
         topics = {}
-        for doc in docs.itervalues():
+        # key - (source,target) where source < target, 
+        # value - (total link strenght, total links)
+        links = {}
+        
+        for docId, docInfo in docs.iteritems():
             # topicComposition a list of tuples (topic id, probability)
-            topicComposition = model.get_document_topics(doc.bow)
+            topicComposition = model.get_document_topics(docInfo.bow)
+
+            SimpleTopicLinker().getLinks(topicComposition, links)
+
             for topicId, prob in topicComposition:
                 if(topicId not in topics):
                     words = self.__getTopicWords(model, topicId) 
-                    topics[topicId] = TopicInformation(words)
+                    topics[topicId] = TopicInformation(topicId, words)
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(topicComposition))
                 
-        return topics
+            TopTopicClusterer().getDocClusters(docId, docInfo, model, topics)
+                
+        return (topics, links)
         
-    def __getTopicsExtractedInfo(self, model, docs, topics):
+    #def __getTopicsExtractedInfo(self, model, docs, topics):
         # For each topic get the documents where that topic is predominant
-        TopTopicClusterer().getDocClusters(docs, model, topics)
+    #    TopTopicClusterer().getDocClusters(docs, model, topics)
             
     def __getTopicWords(self, model, topicId):
         output = []

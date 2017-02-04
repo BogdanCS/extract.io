@@ -45,11 +45,17 @@ nactem.ac.uk
 # Sources
 
 [Topic models for MeSH research paper](http://www.ics.uci.edu/~newman/pubs/Newman-AI09.pdf)
+
 [Trends in Pubmed](./p954-moerchen.pdf)
+
 [Trends in Pubmed 2](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2656084/)
+
 [Extensions](https://bugra.github.io/work/notes/2015-02-21/topic-modeling-for-the-uninitiated/)
+
 [TM vs Term recognition 1](http://istina.msu.ru/media/publications/articles/c31/b23/3542979/ecir.pdf)
+
 [TM on unstructured text, then NE recognition](http://s3.amazonaws.com/mairesse/research/papers/is11-lda.pdf)
+
 [D3.js example](https://github.com/mlvl/Hierarchie)
 [D3.js main](http://tt-history.appspot.com/)
 [D3.js map](http://bl.ocks.org/lokesh005/7640d9b562bf59b561d6)
@@ -57,3 +63,8 @@ nactem.ac.uk
 #TODO
 
 1. Pass document name to the UI as well, along with the document URL
+2. Colour of bubbles -> dark - bright related to the number of docs
+
+3. Create some sensible data
+4. Handle startDate, endDate
+5. Look into TermMine
