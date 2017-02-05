@@ -54,9 +54,11 @@
 			<a class="current" id="diabetesBtn">DIABETES</a>
 		</nav>
 
+		<!--
 		<div class="history">
 			<div class="right btn active" id="lastDayBtn">last 24 hours</div>
 		</div>
+		-->
 		<!--
 		<div class="history">
 			<div class="right btn" id="lastWeekBtn">last week</div>
@@ -68,14 +70,19 @@
 		</div>
 		-->
 		<div class="history">
-			<div class="right btn" id="datepickerBtn">
-				<span id="dateText">pick a date</span>
+			<div class="right btn" id="startDatepickerBtn">
+				<span id="startDateText">pick a date</span>
+				<i class="right icon icon20 icon-chevron-down"></i>
+			</div>
+			<div class="right btn" id="endDatepickerBtn">
+				<span id="endDateText">pick a date</span>
 				<i class="right icon icon20 icon-chevron-down"></i>
 			</div>
 		</div>
 
 		<div class="clear"></div>
-		<div id="datepicker" class="right" style="display:none"></div>
+		<div id="startdatepicker" class="right" style="display:none"></div>
+		<div id="enddatepicker" class="right" style="display:none"></div>
 		
 		<!-- Show docs associated with a particular topic !-->
 		<div id="docs" class="docs"></div>

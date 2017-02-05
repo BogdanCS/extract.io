@@ -7,7 +7,7 @@ class MalletConverter:
             try:
                 line = ""
                 #line += MalletConverter.__find(idField, xmlData[index]).next()
-                line += MalletConverter.getDocId(idField, xmlData[index])
+                line += MalletConverter.getField(idField, xmlData[index])
                 line += " en "
                 #line += MalletConverter.__preprocess(prepro, MalletConverter.__find(dataField, xmlData[index]).next())
                 line += MalletConverter.getDataAsString(dataField, prepro, xmlData[index])

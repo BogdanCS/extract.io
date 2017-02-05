@@ -3,6 +3,10 @@
 import os
 
 class Globals:
+    # TODO try to make it work with POST
+    # Might be because of Google App Engine restrictions
+    # Alternative: cache for presentation
+    PUBMED_FETCH_LIMIT = 170
     PUBMED_SEARCH_URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
     PUBMED_ABSTRACT_FIELD_NAME = "AbstractText"
     PUBMED_ID_FIELD_NAME = "PMID"

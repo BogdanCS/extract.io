@@ -1,16 +1,12 @@
 (function() {
 
-  var LAST_DAY = 0,
-    LAST_WEEK = 1,
-    LAST_MONTH = 2,
-    DATE = 3,
-    LIMIT = 50;
+  var LIMIT = 50;
 
-  var history = LAST_DAY,
-    keyword = "diabetes",
+  var keyword = "diabetes",
     response;
 
-  var datepickerState = 0,
+  var startDatepickerState = 0,
+      endDatepickerState = 0,
     stopInitialAnimation = 0,
     activeTipsy = null;
 
@@ -19,15 +15,30 @@
     /*
      * initialize date picker
      */
-    $("#datepicker").datepicker({
+    $("#startdatepicker").datepicker({
       dateFormat: "dd.mm.y",
       minDate: new Date(757382400), // 1 January 1994
       maxDate: new Date(),
       onSelect: function(date) {
-        setHistory(this, DATE);
+	toggleDatepicker("#startdatepicker", "#startDatepickerBtn", true);
+	setDateText(true, "#startdatepicker", "startDateText");  
+	//TODO - set minDate for endDatePicker to selected date here
       }
     });
-    $("#datepicker").datepicker("setDate", new Date());
+    $("#enddatepicker").datepicker({
+      dateFormat: "dd.mm.y",
+      minDate: new Date(757382400), // 1 January 1994
+      maxDate: new Date(),
+      onSelect: function(date) {
+	toggleDatepicker("#enddatepicker", "#endDatepickerBtn", false);
+	setDateText(true, "#enddatepicker", "endDateText");  
+	removeTopics();
+      }
+    });
+    $("#startdatepicker").datepicker("setDate", new Date());
+    $("#enddatepicker").datepicker("setDate", new Date());
+    $('#startDatepickerBtn').addClass('active');
+    $('#endDatepickerBtn').addClass('active');
 
     /*
      * initialize topics
@@ -72,16 +83,16 @@
 
   function getTopics() {
 
+      console.log("got here");
     // create url
     var pathArray = document.URL.split('/');
     var url = pathArray[0] + "//" + pathArray[2] + "/rpcNewSearch?keywords=" + keyword;
 
-    if (history == DATE) {
-      startDate = Math.floor(jQuery("#datepicker").datepicker("getDate")
+      startDate = Math.floor(jQuery("#startdatepicker").datepicker("getDate")
         .getTime() / 1000);
-      endDate = startDate + 86400;
+      endDate = Math.floor(jQuery("#enddatepicker").datepicker("getDate")
+        .getTime() / 1000);
       url += "&start_date=" + startDate + "&end_date=" + endDate;
-    } 
      
     url += "&limit=" + LIMIT;
 
@@ -154,8 +165,8 @@
   /**
    * Removes chart
    */
-  function removeTopics(callback) {
-    currentChart.remove(callback);
+  function removeTopics() {
+    currentChart.remove();
   }
 
   /**
@@ -200,18 +211,13 @@
   function setCurrentChartExplanation(message) {
     var message = "Topics extracted from medical abstracts published";
 
-    if (history == LAST_DAY) {
-      message += " within last 24 hours";
-    } else if (history == LAST_WEEK) {
-      message += " within last week";
-    } else if (history == LAST_MONTH) {
-      message += " within last month";
-    } else {
-      message += " on " + jQuery("#datepicker")
+      message += " between " + jQuery("#startdatepicker")
         .datepicker("getDate")
         .toDateString()
-        .substring(4);
-    }
+        .substring(4) + " and " + jQuery("#enddatepicker")
+	.datepicker("getDate")
+	.toDateString()
+	.substring(4);
 
     if (keyword == "diabetes") {
       message += " about Diabetes";
@@ -222,21 +228,10 @@
     $('#topics').prepend("<span>" + message + "</span>");
   }
 
-  function setHistory(node, h) {
-    if (history != h || h == DATE) {
-      history = h;
-      removeTopics(getTopics);
-
-      // change style
-      changeHistoryBtnStyle(node, h);
-    }
-    return false;
-  }
-
   function setKeyword(node, r) {
     if (keyword != r) {
       keyword = r;
-      removeTopics(getTopics);
+      removeTopics();
 
       // change style
       changeRegionBtnStyle(node);
@@ -244,14 +239,14 @@
     return false;
   }
 
-  function setDateText(date) {
+  function setDateText(date, picker, text) {
     if (date) {
-      _("dateText").innerHTML = jQuery("#datepicker")
+      _(text).innerHTML = jQuery(picker)
         .datepicker("getDate")
         .toDateString()
         .substring(4);
     } else {
-      _("dateText").innerHTML = "pick a date";
+      _(text).innerHTML = "pick a date";
     }
   }
 
@@ -260,42 +255,25 @@
     $(node).addClass('current');
   }
 
-  function changeHistoryBtnStyle(node, type) {
-    if (type == DATE) {
-      setDateText(true);
-      toggleDatepicker();
-      $('.btn').removeClass('active');
-      $('#datepickerBtn').addClass('active');
-    } else if (node) {
-      datepickerState = true;
-      toggleDatepicker();
-      setDateText(null);
-      $('.btn').removeClass('active');
-      $('#datepickerBtn').removeClass('datepicker-open');
-      $(node).addClass('active');
-    }
-  }
-
-  function toggleDatepicker() {
-    if (datepickerState) {
-      $('#datepicker').slideUp();
-      $('#datepickerBtn').removeClass('datepicker-open');
+  function toggleDatepicker(picker, pickerBtn, start) {
+    if ((start && startDatepickerState) ||
+        (!start && endDatepickerState)) {
+      $(picker).slideUp();
+      $(pickerBtn).removeClass('datepicker-open');
     } else {
-      $('#datepicker').slideDown();
-      $('#datepickerBtn').addClass('datepicker-open');
+      $(picker).slideDown();
+      $(pickerBtn).addClass('datepicker-open');
     }
-    datepickerState = !datepickerState;
-    return false;
-  }
+    if(start)
+    {
+	startDatepickerState = !startDatepickerState;
+    }
+    else
+    {
+	endDatepickerState = !endDatepickerState;
+    }
 
-  function getHistoryText() {
-    if (history == LAST_DAY) {
-      return "ld";
-    } else if (history == LAST_WEEK) {
-      return "lw";
-    } else if (history == LAST_MONTH) {
-      return "lm";
-    }
+    return false;
   }
 
   /**
@@ -304,7 +282,9 @@
   var charts = {
     bubbleChart: function() {
 
-      var area = _("topics");
+      var area = _("topics"),
+	node,
+	svg;
 
       return {
         draw: function() {
@@ -314,14 +294,19 @@
           var w = area.offsetWidth;
           var h = area.offsetHeight;
 
-          var svg = d3.select("#topics").append("svg")
+          svg = d3.select("#topics").append("svg")
             .attr("width", w)
             .attr("height", h);
 
 	  // Links - forces
+	  // Set a threshold for creating an edge
+	  // Fix the documents stuff
+	  // Delete lone numbers
+	  // multi select
 	  var links = response.links;
 	  var simulation = d3.forceSimulation()
-		.force("link", d3.forceLink().id(function(d) { return d.uid; }))
+		.force("link", d3.forceLink().id(function(d) { return d.uid; })
+		.distance(function(d) { return (1/d.value)*10000;}))
 		.force("charge", d3.forceManyBody())
 		.force("center", d3.forceCenter(w / 2, h / 2));
 
@@ -330,7 +315,7 @@
 		.selectAll("line")
 		.data(links)
 		.enter().append("line")
-		.attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+		.attr("stroke-width", function(d) { return Math.sqrt(d.value); }); // this is a bit redunant, maybe we can use the stroke width to represent something else
 
 	  // Topics - nodes
 	  var nodes = response.topics;
@@ -338,7 +323,7 @@
           var fill = d3.scaleOrdinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
           var radiusCoefficient = (3500 / w) * (maxNodeValue / 50);
 	     
-          var node = svg.selectAll(".node")
+          node = svg.selectAll(".node")
 	    .data(nodes)
             .enter().append("circle")
             .attr("class", "node")
@@ -443,7 +428,7 @@
 	      area.innerHTML = null;
 
 	      // Create initial svg
-              var svg = d3.select("#tempHist").append("svg")
+              svg = d3.select("#tempHist").append("svg")
 		  .attr("width", area.offsetWidth*2)
 		  .attr("height",area.offsetHeight/3);
 	      
@@ -558,8 +543,7 @@
           }
 
         },
-        remove: function(callback) {
-          //compForce.force("gravity", gravity(0.001)).restart();
+        remove: function() {
 
           node.transition()
             .duration(1000)
@@ -571,7 +555,8 @@
             .duration(1000)
             .style("opacity", 1e-6)
             .remove()
-            .each("end", callback);
+
+	  getTopics();
         }
       }
     }
@@ -590,20 +575,11 @@
     setKeyword(this, "diabetes");
   });
 
-  jQuery("#lastDayBtn").click(function() {
-    setHistory(this, LAST_DAY);
+  jQuery("#startDatepickerBtn").click(function() {
+    toggleDatepicker("#startdatepicker", "#startDatepickerBtn", true);
   });
-
-  jQuery("#lastWeekBtn").click(function() {
-    setHistory(this, LAST_WEEK);
-  });
-
-  jQuery("#lastMonthBtn").click(function() {
-    setHistory(this, LAST_MONTH);
-  });
-
-  jQuery("#datepickerBtn").click(function() {
-    toggleDatepicker();
+  jQuery("#endDatepickerBtn").click(function() {
+    toggleDatepicker("#enddatepicker", "#endDatepickerBtn", false);
   });
 })();
 
