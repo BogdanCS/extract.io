@@ -1,6 +1,6 @@
 (function() {
 
-  var LIMIT = 50;
+  var LIMIT = 500;
 
   var keyword = "diabetes",
     response;
@@ -300,13 +300,14 @@
 
 	  // Links - forces
 	  // Set a threshold for creating an edge
+	  // or keep top edges for every node
 	  // Fix the documents stuff
 	  // Delete lone numbers
 	  // multi select
 	  var links = response.links;
 	  var simulation = d3.forceSimulation()
 		.force("link", d3.forceLink().id(function(d) { return d.uid; })
-		.distance(function(d) { return (1/d.value)*10000;}))
+		.distance(function(d) { return (1/d.value)*20000;}))
 		.force("charge", d3.forceManyBody())
 		.force("center", d3.forceCenter(w / 2, h / 2));
 
@@ -314,14 +315,20 @@
 		.attr("class", "links")
 		.selectAll("line")
 		.data(links)
-		.enter().append("line")
-		.attr("stroke-width", function(d) { return Math.sqrt(d.value); }); // this is a bit redunant, maybe we can use the stroke width to represent something else
+		.enter().append("line");
+		//.attr("stroke-width", function(d) { return 0.1;/*Math.sqrt(d.value);*/ }); // this is a bit redunant, maybe we can use the stroke width to represent something else
 
 	  // Topics - nodes
 	  var nodes = response.topics;
-	  var maxNodeValue = nodes[0].score; // to be updated
+	  var length = nodes.length;
+	  var maxNodeValue = nodes[0].score; 
+	  for (var idx = 0; idx < length; idx++)
+	  {
+	      if(nodes[idx].score > maxNodeValue)
+		  maxNodeValue = nodes[idx].score;
+	  }
           var fill = d3.scaleOrdinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
-          var radiusCoefficient = (3500 / w) * (maxNodeValue / 50);
+          //var radiusCoefficient = (3500 / w) * (maxNodeValue / 100);
 	     
           node = svg.selectAll(".node")
 	    .data(nodes)
@@ -363,7 +370,7 @@
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
-		return d.score / radiusCoefficient;
+		return d.score*500; /// radiusCoefficient;
             });
 
           svg.style("opacity", 1e-6)
@@ -412,6 +419,9 @@
 	     {
 		 area.innerHTML += "<a href=\"" + docs[idx] + "\"> Document #" + idx + "</a>";
 	     }
+	      
+	     $('#docs').prepend("<br>")
+	     $('#docs').prepend("<span>" + "Documents about the topic"  + "</span>");
 	  }
 
 	  function drawTemporalTrend(years)
@@ -471,6 +481,8 @@
 		      .attr("class", "axisBlue")
 		      .call(d3.axisLeft(y));
 	      }
+
+	      $('#tempHist').prepend("<span>" + "Temporal trend for the topic"  + "</span>");
 	  }
 
 
@@ -526,7 +538,7 @@
             } else if (value > 59) {
               return Math.floor(value / 60) + " h. " + pretifyDuration(value % 60);
             } else {
-              return value + " avg prob."
+              return value + " avg score."
             }
           }
 	    

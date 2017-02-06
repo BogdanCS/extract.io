@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from Bio import Entrez
 from time import sleep
 from globals import Globals
+from random import randint
 
 # Abstract super class for the Retriever classes
 class DocumentRetriever:
@@ -23,13 +24,11 @@ class PubmedRetriever(DocumentRetriever):
 
     def __search(self, query, maxNumber):
         Entrez.email = 'bogdan.stoian11@gmail.com'
-        print query
-        print maxNumber
-        #retstart
         handle = Entrez.esearch(db='pubmed', 
                                 sort='relevance', 
                                 retmax=maxNumber,
                                 retmode='xml', 
+                                #retstart=randint(0,3000), # to test this with min date, max date
                                 term=query)
         results = Entrez.read(handle)
         return results

@@ -25,6 +25,7 @@ class TopicManager():
         # TODO - Add the timestamps
         # Retrieve abstracts
         papers = pubmed.getDocumentsIf(req['keywords'], req['limit'])
+        print papers[0]
 
         # Create preprocesser
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
@@ -32,7 +33,7 @@ class TopicManager():
         prepro = PubmedPreprocesser(stemmer)
         
         bowConverter = gensim.corpora.Dictionary()
-        # Do we need to merge with initial corpus?
+        _ = bowConverter.merge_with(Globals.CORPUS.id2word) 
         
         # Transform each document in a bag of words, identify the bag of words by the initial doc id
         # Also keep the publish year for each doc
@@ -44,6 +45,7 @@ class TopicManager():
                 docId = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
                 docInfo = DocumentInformation(bowConverter.doc2bow(MalletConverter.getDataAsString(
                     Globals.PUBMED_ABSTRACT_FIELD_NAME, prepro, paper).split()))
+                # !! NORMALISE YEARS BASED ON TOTAL DOCS / YEAR
                 docInfo.year = MalletConverter.getField(Globals.PUBMED_PUBLISH_YEAR_FIELD_NAME, paper)
                 docs[docId] = docInfo
             except StopIteration:
@@ -51,11 +53,12 @@ class TopicManager():
 
         # TODO - multiple models
         # have this loaded?
-        model = gensim.models.LdaModel.load(Globals.TRAINED_MODEL_PATH)
+        # model = gensim.models.LdaModel.load(Globals.TRAINED_MODEL_PATH)
         # TODO - update async model.update(corpus)
         
         # Extract basic information from our document set about each topic
-        (topics, links) = self.__getTopicsBasicInfo(model, docs)
+        # We keep the model as a global variables so we don't have to load it each time
+        (topics, links) = self.__getTopicsBasicInfo(Globals.MODEL, docs)
         # Extract information about topics
         # is this copy necessary? topics = self....
         # links = self.__getTopicsExtractedInfo(model, docs, topics)
@@ -69,11 +72,13 @@ class TopicManager():
             topic_list.append(v)
         
         # Convert link list dictionary to a simple list of LinkInformation
+        # Drop weak links
         link_list = []
         for (source, target), values in links.iteritems():
-            link_list.append(LinkInformation(source, 
-                                             target, 
-                                             SimpleTopicLinker().getFinalValue(values)))
+            if(SimpleTopicLinker().strongLink(values)):
+                link_list.append(LinkInformation(source, 
+                                                 target, 
+                                                 SimpleTopicLinker().getFinalValue(values)))
         
         return (topic_list, link_list)
         
@@ -101,7 +106,7 @@ class TopicManager():
                     words = self.__getTopicWords(model, topicId) 
                     topics[topicId] = TopicInformation(topicId, words)
                 # Update topic score 
-                topics[topicId].score = topics[topicId].score + (prob/len(topicComposition))
+                topics[topicId].score = topics[topicId].score + (prob/len(docs));
                 
             TopTopicClusterer().getDocClusters(docId, docInfo, model, topics)
                 

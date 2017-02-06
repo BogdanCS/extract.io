@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import os
+import gensim
 
 class Globals:
     # TODO try to make it work with POST
@@ -14,6 +15,11 @@ class Globals:
     
     TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
     CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
+
+    # These are only initialised once so we don't load them every
+    # time the UI sends a request
+    MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
+    CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
 
 # To delete
     _1_DAY = 86400  # 24 * 60 * 60 seconds

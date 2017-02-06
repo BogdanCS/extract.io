@@ -19,7 +19,8 @@ class Cron(webapp2.RequestHandler):
         logging.info("Cron starting..")
         pubmed = PubmedRetriever()
         #todo update
-        papers = pubmed.getDocumentsIf("diabetes", 10000)
+        NO_DOCS = 7000
+        papers = pubmed.getDocumentsIf("diabetes", NO_DOCS)
 
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
         # stemmer = SnowballStemmer("english") # algorithmic(Porter) stemmer
@@ -29,11 +30,14 @@ class Cron(webapp2.RequestHandler):
                                                    Globals.PUBMED_ABSTRACT_FIELD_NAME)
 
         # database ?
+        logging.info("Start writing to file")
         with io.FileIO(Globals.CORPUS_PATH, "w") as file:
             file.write(malletCorpus.encode('utf8'))
 
+        logging.info("Stop writing to file")
         corpus = gensim.corpora.MalletCorpus(Globals.CORPUS_PATH)
-        model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=20, num_topics=100, iterations=500)
+        
+        model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=8, num_topics=75, iterations=500)
         model.save(Globals.TRAINED_MODEL_PATH)
 
         # either get abbreviatons from first occurence in text or get it from some web service
