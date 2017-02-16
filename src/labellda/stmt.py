@@ -3,8 +3,6 @@
 from csv import writer, reader
 from re import sub
 from subprocess import call
-#from google.appengine.tools.devappserver2 import safe_subprocess
-#import subprocess
 from os import path, remove, sep
 from shutil import rmtree
 from glob import glob
@@ -440,6 +438,7 @@ class STMT(object):
         labels : list
             List with labels where each index corresponds to the text in space.
         """
+        self.cleanup(True)
         self.run(space, labels, 'train')
 
     def test(self, space, labels):

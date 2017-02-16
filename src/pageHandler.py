@@ -46,12 +46,14 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
  	            ['sports', 'we kick a ball around'],
  	            ['rugby', 'now add some confusing sentence with novel words what is happening']]
  	  
- 	    import topbox
+ 	    import labellda
  	    
- 	    stmt = topbox.STMT('test_model')
- 	    stmt = topbox.STMT('test_model', epochs=400, mem=14000)
+ 	    stmt = labellda.STMT('test_model')
+ 	    stmt = labellda.STMT('test_model', epochs=400, mem=14000)
  	    
  	    train_labels, train_space = zip(*train)
+            print train_labels
+            print train_space
  	    test_labels, test_space = zip(*test)
  	    
  	    stmt.train(train_space, train_labels)
