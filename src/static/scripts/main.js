@@ -284,6 +284,7 @@
 
       var area = _("topics"),
 	node,
+	linkedByIdx,
 	svg;
 
       return {
@@ -317,6 +318,12 @@
 		.data(links)
 		.enter().append("line");
 		//.attr("stroke-width", function(d) { return 0.1;/*Math.sqrt(d.value);*/ }); // this is a bit redunant, maybe we can use the stroke width to represent something else
+	    
+	  // Create this index for later use when highlighting neighbouring nodes
+	  linkedByIdx = {};
+	    links.forEach(function(d) {
+		linkedByIdx[d.source.uid + "," + d.target.uid] = 1;
+	    });
 
 	  // Topics - nodes
 	  var nodes = response.topics;
@@ -405,7 +412,27 @@
 	      var d = this.__data__;
 	      drawDocs(d.docs)
 	      drawTemporalTrend(d.years)
+	      highlightAdjacent(d, 0.1) // argument is opacity
 	  })
+	    
+	  function neighboring(a, b) {
+	    return linkedByIdx[a.uid + "," + b.uid] || linkedByIdx[b.uid + "," + a.uid];
+	  }
+
+	  function highlightAdjacent(d, opacity)
+	  {
+	      // Fade out everything
+	      svg.selectAll("circle, line").style("opacity", opacity); // to use fill and stroke opacity
+	      
+	      // Highlight adjacent links
+	      link.style("opacity", function(o) {
+		  return o.source === d || o.target === d ? 1 : opacity;
+	      });
+
+	      node.style("opacity", function(o) {
+		  return neighboring(d, o) ? 1 : opacity;
+	      });
+	  }
 
 	  function drawDocs(docs)
 	  {
