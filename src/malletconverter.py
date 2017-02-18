@@ -61,7 +61,7 @@ class MalletConverter:
             output += processedHeading + " "
             
         output = output[:-1]
-        print output
+        logging.info("Extracted headings: " + output)
         return output 
 
     @staticmethod

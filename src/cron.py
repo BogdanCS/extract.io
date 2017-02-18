@@ -48,7 +48,7 @@ class Cron(webapp2.RequestHandler):
 
         # Train unsupervised LDA model
         LDATopicModel().trainModel() #malletCorpus
-        
+
         # group abstract per topic
         #for i in range(0,10):
         #    print model.get_document_topics(mm[i])

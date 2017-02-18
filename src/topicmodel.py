@@ -1,10 +1,23 @@
 import logging
 import gensim
 
+from abc import ABCMeta, abstractmethod   
+
 from globals import Globals
 import labellda
 
-class LLDATopicModel:
+
+class TopicModel:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def trainModel(self, corpus, labels) : pass
+    def loadModel(self, identifier) : pass
+    # Gets text document return list of tuples (topicId, probability)
+    def getTopicComposition(self, doc) : pass
+    def getTopicTopWords(self, topicId) : pass
+
+class LLDATopicModel(TopicModel):
     def trainModel(self, malletCorpus, labels):
         logging.info("Train supervised LDA")
     
@@ -15,7 +28,7 @@ class LLDATopicModel:
         print train_space
         print train_labels
 
-        stmt = labellda.STMT('labellda_model', epochs=400, mem=14000)
+        stmt = labellda.STMT(Globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         stmt.train(train_space, train_labels)
         
     def __unpack(self, malletCorpus, labels):
@@ -31,11 +44,19 @@ class LLDATopicModel:
         print len(train_labels)
         return (tuple(train_space), tuple(train_labels))
     
-            
-
-class LDATopicModel:
-    def trainModel(self): # get Mallet corpus from file
+class LDATopicModel(TopicModel):
+    def __init__(self):
+        self.bowConverter = gensim.corpora.Dictionary()
+        try:
+            _ = self.bowConverter.merge_with(Globals.CORPUS.id2word) 
+        except:
+            logging.warn("No corpus found")
+        
+    def trainModel(self, corpus=None, labels=None): # get Mallet corpus from file
         logging.info("Train unsupervised LDA")
         corpus = gensim.corpora.MalletCorpus(Globals.CORPUS_PATH)
         model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=8, num_topics=75, iterations=500)
         model.save(Globals.TRAINED_MODEL_PATH)
+
+    def getTopicComposition(self, docText):
+        bow = self.bowConverter.doc2bow(docText.split())

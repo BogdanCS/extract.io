@@ -15,19 +15,22 @@ class DocumentRetriever:
 # Concrete Retriever class for Pubmed/Medline
 class PubmedRetriever(DocumentRetriever):
 
-    def getDocumentsIf(self, query, maxNumber):
-        results = self.__search(query, maxNumber)
+    def getDocumentsIf(self, query, maxNumber, startDate, endDate):
+        results = self.__search(query, maxNumber, startDate, endDate)
         id_list = results['IdList']
         papers = self.__fetch_details(id_list)
         
         return papers #?['PubmedArticle'] ?# Standard Python dictionary format
 
-    def __search(self, query, maxNumber):
+    def __search(self, query, maxNumber, startDate, endDate):
         Entrez.email = 'bogdan.stoian11@gmail.com'
         handle = Entrez.esearch(db='pubmed', 
                                 sort='relevance', 
                                 retmax=maxNumber,
                                 retmode='xml', 
+                                datetype='pdat',
+                                mindate=startDate,
+                                maxdate=endDate,
                                 #retstart=randint(0,3000), # to test this with min date, max date
                                 term=query)
         results = Entrez.read(handle)

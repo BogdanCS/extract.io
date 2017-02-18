@@ -8,6 +8,7 @@ from shutil import rmtree
 from glob import glob
 from inspect import isgenerator
 from sys import version_info
+import logging
 
 # Authors:      Chris Emmery
 # References:   Ramage, Hall, Nallapati, Manning (2009)
@@ -387,13 +388,19 @@ class STMT(object):
         pattern = self.name + '_*' if not rmall else '*_*'
         files = glob(self.dir + pattern)
         for f in files:
-            if not self.keep and step != 'results':
+            if step == 'pretraining':
+                try:
+                    remove(f)
+                except Exception, e:
+                    rmtree(f)
+            elif not self.keep and step != 'results':
                 rmtree(f) if '.' not in f else remove(f)
             else:
 		try:
+                    print f
                     remove(f) if '.' in f and '.gz' not in f else None
 		except Exception, e:
-		    print "Tried to remove directory"
+		    logging.warn("Tried to remove directory")
 
     def run(self, space, labels, step):
         """Main runner.
@@ -438,7 +445,7 @@ class STMT(object):
         labels : list
             List with labels where each index corresponds to the text in space.
         """
-        self.cleanup(True)
+        self.cleanup(step='pretraining')
         self.run(space, labels, 'train')
 
     def test(self, space, labels):

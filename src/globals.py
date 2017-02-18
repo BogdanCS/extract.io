@@ -20,8 +20,13 @@ class Globals:
 
     # These are only initialised once so we don't load them every
     # time the UI sends a request
-    MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
+    LDA_MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
     CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
+    
+    PROCESSED_CACHED_CORPUS = {}
+
+    LLDA_MODEL_NAME = "labellda_model"
+    LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
 
 # To delete
     _1_DAY = 86400  # 24 * 60 * 60 seconds

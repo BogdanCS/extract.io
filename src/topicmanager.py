@@ -13,55 +13,13 @@ from linkinformation import LinkInformation
 from topiclinker import SimpleTopicLinker
 
 class TopicManager():
-    #def __init__(self):
-        # to update with default model
-        # to update with a more clever cache
-        # self.cachedTopicModel = []
 
-    def getTopics(self, req):
+    def getTopics(self, docs):
         logging.info("getTopics()")
-        
-        pubmed = PubmedRetriever()
-        # TODO - Add the timestamps
-        # Retrieve abstracts
-        papers = pubmed.getDocumentsIf(req['keywords'], req['limit'])
-        print papers[0]
-
-        # Create preprocesser
-        stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
-        # stemmer = SnowballStemmer("english") # algorithmic(Porter) stemmer
-        prepro = PubmedPreprocesser(stemmer)
-        
-        bowConverter = gensim.corpora.Dictionary()
-        _ = bowConverter.merge_with(Globals.CORPUS.id2word) 
-        
-        # Transform each document in a bag of words, identify the bag of words by the initial doc id
-        # Also keep the publish year for each doc
-        docs = {}
-        for paper in papers:
-            # We might want to set allow_update = true
-            # Swallow exceptions due to invalid data
-            try:
-                docId = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
-                docInfo = DocumentInformation(bowConverter.doc2bow(MalletConverter.getDataAsString(
-                    Globals.PUBMED_ABSTRACT_FIELD_NAME, prepro, paper).split()))
-                # !! NORMALISE YEARS BASED ON TOTAL DOCS / YEAR
-                docInfo.year = MalletConverter.getField(Globals.PUBMED_PUBLISH_YEAR_FIELD_NAME, paper)
-                docs[docId] = docInfo
-            except StopIteration:
-                logging.info("Abstract not found")
-
-        # TODO - multiple models
-        # have this loaded?
-        # model = gensim.models.LdaModel.load(Globals.TRAINED_MODEL_PATH)
-        # TODO - update async model.update(corpus)
         
         # Extract basic information from our document set about each topic
         # We keep the model as a global variables so we don't have to load it each time
         (topics, links) = self.__getTopicsBasicInfo(Globals.MODEL, docs)
-        # Extract information about topics
-        # is this copy necessary? topics = self....
-        # links = self.__getTopicsExtractedInfo(model, docs, topics)
         
         # Drop the topic id keys as we don't need them anymore
         # Convert the binary tree container in which we store years
@@ -82,11 +40,6 @@ class TopicManager():
         
         return (topic_list, link_list)
         
-            # we might be interested in max topic, we might not - this could be decided in the UI
-        #    topicComposition = model.get_document_topics(bow)
-        #    for topicId, prob in topicComposition:
-        #        if(
-            
     def __getTopicsBasicInfo(self, model, docs):
         # key - topic id
         # value - TopicInformation
@@ -112,10 +65,6 @@ class TopicManager():
                 
         return (topics, links)
         
-    #def __getTopicsExtractedInfo(self, model, docs, topics):
-        # For each topic get the documents where that topic is predominant
-    #    TopTopicClusterer().getDocClusters(docs, model, topics)
-            
     def __getTopicWords(self, model, topicId):
         output = []
 
