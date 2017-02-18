@@ -20,10 +20,10 @@ class DocumentManager():
         
         # Recreate Document ID - DocumentInformation mapping
         Globals.PROCESSED_CACHED_CORPUS = {}
-        for paper in papers:
+        for index, paper in enumerate(papers):
             # Swallow exceptions due to invalid data
             try:
-                docId = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
-                Globals.PROCESSED_CACHED_CORPUS[docId] = DocumentInformation(paper, prepro)
+                docUID = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
+                Globals.PROCESSED_CACHED_CORPUS[docUID] = DocumentInformation(paper, prepro, index)
             except StopIteration:
                 logging.warn("Abstract not found")

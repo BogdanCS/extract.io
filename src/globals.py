@@ -17,27 +17,15 @@ class Globals:
     TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
     CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
     CORPUS_LABELS_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels"
+    LLDA_MODEL_NAME = "labellda_model"
 
     # These are only initialised once so we don't load them every
     # time the UI sends a request
     LDA_MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
-    CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
+    LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
     
+    CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
     PROCESSED_CACHED_CORPUS = {}
 
-    LLDA_MODEL_NAME = "labellda_model"
-    LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
-
-# To delete
-    _1_DAY = 86400  # 24 * 60 * 60 seconds
-    _1_WEEK = 604800  # 7 * 24 * 60 * 60 seconds
-    _1_MONTH = 2592000  # 30 * 24 * 60 * 60 seconds
-    _10_MINUTES = 600  # seconds
-
-    DEFAULT_LIMIT = 5
-
-    MAX_REQUESTS = 5
-
-    DUAL_LAYER_MEMCACHE_AND_IN_APP_MEMORY_CACHE = 0 # Cache in both memcache and cachepy by default
-    SINGLE_LAYER_MEMCACHE_ONLY = 1
-    SINGLE_LAYER_IN_APP_MEMORY_CACHE_ONLY = 2
+    # Need to normalise
+    TOPIC_PROB_THRESHOLD = 0.05

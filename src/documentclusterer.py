@@ -13,10 +13,10 @@ from globals import Globals
 
 class TopTopicClusterer:
 
-    def getDocClusters(self, docId, docInfo, modelFeatures, clusters):
+    def getDocClusters(self, docId, docInfo, model, clusters):
         #for docId, docInfo in docs.iteritems():
-        topicDistrib = modelFeatures.get_document_topics(docInfo.bow)
-        maxIdx = self.__getMaxTopicIndex(topicDistrib)
+        topicComposition = model.getTopicComposition(docInfo.text)
+        maxIdx = self.__getMaxTopicIndex(topicComposition)
         if (maxIdx not in clusters):
             raise Exception('Topic id not found')
         # Append document to the corresponding cluster identified by topic id
@@ -24,8 +24,8 @@ class TopTopicClusterer:
         # Add its year of publishment
         clusters[maxIdx].years.add(docInfo.year)
         
-    def __getMaxTopicIndex(self, topicDistrib):
-        return max(topicDistrib, key=itemgetter(1))[0]
+    def __getMaxTopicIndex(self, topicComposition):
+        return max(topicComposition, key=itemgetter(1))[0]
             
 
 # class KMeansClusterer:

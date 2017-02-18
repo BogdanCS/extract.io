@@ -27,9 +27,9 @@ println("Writing document distributions to "+output+"-document-topic-distributio
 val perDocTopicDistributions = InferCVB0DocumentTopicDistributions(model, dataset);
 CSVFile(output+"-document-topic-distributions-res.csv").write(perDocTopicDistributions);
 
-println("Writing topic usage to "+output+"-usage-res.csv");
-val usage = QueryTopicUsage(model, dataset, perDocTopicDistributions);
-CSVFile(output+"-usage-res.csv").write(usage);
+// println("Writing topic usage to "+output+"-usage-res.csv");
+// val usage = QueryTopicUsage(model, dataset, perDocTopicDistributions);
+// CSVFile(output+"-usage-res.csv").write(usage);
 
 println("Estimating per-doc per-word topic distributions");
 val perDocWordTopicDistributions = EstimatePerWordTopicDistributions(

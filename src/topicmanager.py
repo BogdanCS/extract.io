@@ -14,7 +14,7 @@ from topiclinker import SimpleTopicLinker
 
 class TopicManager():
 
-    def getTopics(self, docs):
+    def getTopics(self, model, docs):
         logging.info("getTopics()")
         
         # Extract basic information from our document set about each topic
@@ -50,26 +50,17 @@ class TopicManager():
         
         for docId, docInfo in docs.iteritems():
             # topicComposition a list of tuples (topic id, probability)
-            topicComposition = model.get_document_topics(docInfo.bow)
+            topicComposition = model.getTopicComposition(docInfo)
 
             SimpleTopicLinker().getLinks(topicComposition, links)
 
             for topicId, prob in topicComposition:
                 if(topicId not in topics):
-                    words = self.__getTopicWords(model, topicId) 
-                    topics[topicId] = TopicInformation(topicId, words)
+                    nameTokens = model.getTopicName(topicId) 
+                    topics[topicId] = TopicInformation(topicId, nameTokens)
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
                 
             TopTopicClusterer().getDocClusters(docId, docInfo, model, topics)
                 
         return (topics, links)
-        
-    def __getTopicWords(self, model, topicId):
-        output = []
-
-        topWords = model.show_topic(topicId, topn=5)
-        for word, prob in topWords:
-            output.append(word)
-
-        return output
