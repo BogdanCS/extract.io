@@ -1,13 +1,7 @@
 import logging
-import gensim
-import hunspell
 
 from globals import Globals
-from documentretriever import PubmedRetriever
-from preprocesser import PubmedPreprocesser
-from malletconverter import MalletConverter
 from documentclusterer import TopTopicClusterer
-from documentinformation import DocumentInformation
 from topicinformation import TopicInformation
 from linkinformation import LinkInformation
 from topiclinker import SimpleTopicLinker
@@ -19,7 +13,7 @@ class TopicManager():
         
         # Extract basic information from our document set about each topic
         # We keep the model as a global variables so we don't have to load it each time
-        (topics, links) = self.__getTopicsBasicInfo(Globals.MODEL, docs)
+        (topics, links) = self.__getTopicsBasicInfo(model, docs)
         
         # Drop the topic id keys as we don't need them anymore
         # Convert the binary tree container in which we store years
@@ -51,6 +45,7 @@ class TopicManager():
         for docId, docInfo in docs.iteritems():
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.getTopicComposition(docInfo)
+            print topicComposition
 
             SimpleTopicLinker().getLinks(topicComposition, links)
 

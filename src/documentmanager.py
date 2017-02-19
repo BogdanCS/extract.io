@@ -1,4 +1,11 @@
+import logging
+import hunspell
+
 from globals import Globals
+from documentretriever import PubmedRetriever
+from preprocesser import PubmedPreprocesser
+from malletconverter import MalletConverter
+from documentinformation import DocumentInformation
 
 class DocumentManager():
 
@@ -20,10 +27,13 @@ class DocumentManager():
         
         # Recreate Document ID - DocumentInformation mapping
         Globals.PROCESSED_CACHED_CORPUS = {}
-        for index, paper in enumerate(papers):
+        index = 0
+        for paper in papers:
             # Swallow exceptions due to invalid data
             try:
                 docUID = MalletConverter.getField(Globals.PUBMED_ID_FIELD_NAME, paper)
                 Globals.PROCESSED_CACHED_CORPUS[docUID] = DocumentInformation(paper, prepro, index)
+                # Don't count docs without abstracts
+                index = index + 1
             except StopIteration:
                 logging.warn("Abstract not found")

@@ -1,7 +1,9 @@
 # coding=utf-8
 
 import os
+import json
 import gensim
+import labellda
 
 class Globals:
     # TODO try to make it work with POST
@@ -17,6 +19,7 @@ class Globals:
     TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
     CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
     CORPUS_LABELS_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels"
+    CORPUS_LABELS_IDX_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels.index"
     LLDA_MODEL_NAME = "labellda_model"
 
     # These are only initialised once so we don't load them every
@@ -25,6 +28,8 @@ class Globals:
     LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
     
     CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
+    LLDA_LABEL_INDEX = json.loads(open(CORPUS_LABELS_IDX_PATH).read())
+    
     PROCESSED_CACHED_CORPUS = {}
 
     # Need to normalise

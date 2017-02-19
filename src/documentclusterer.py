@@ -15,7 +15,7 @@ class TopTopicClusterer:
 
     def getDocClusters(self, docId, docInfo, model, clusters):
         #for docId, docInfo in docs.iteritems():
-        topicComposition = model.getTopicComposition(docInfo.text)
+        topicComposition = model.getTopicComposition(docInfo)
         maxIdx = self.__getMaxTopicIndex(topicComposition)
         if (maxIdx not in clusters):
             raise Exception('Topic id not found')

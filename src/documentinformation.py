@@ -1,4 +1,5 @@
 from malletconverter import MalletConverter
+from globals import Globals
 
 class DocumentInformation(object):
     def __init__(self, paper, prepro, index):

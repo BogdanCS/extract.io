@@ -35,9 +35,18 @@ class RPCNewModelHandler(webapp2.RequestHandler):
         try:
             if not Globals.PROCESSED_CACHED_CORPUS:
                 raise Exception("No corpus has been processed")
-                
+        
+            req = { 'model' : self.request.get('model')}
+            
+            # This could be model factory
+            model = None
+            if(req['model'] == 'LLDA'):
+                model = LLDATopicModel(Globals.LLDA_MODEL, Globals.LLDA_LABEL_INDEX, Globals.PROCESSED_CACHED_CORPUS)
+            else:
+                model = LDATopicModel(Globals.LDA_MODEL)
+
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(Globals.PROCESSED_CACHED_CORPUS)
+            (topics, links) = TopicManager().getTopics(model, Globals.PROCESSED_CACHED_CORPUS)
             
         except Exception, e:
             traceback.print_exc()
@@ -51,12 +60,23 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             req = { 'keywords': self.request.get('keywords'),
                     'startDate': self.request.get('start_date'),
                     'endDate': self.request.get('end_date'),
-                    'limit': self.request.get('limit')}
+                    'limit': self.request.get('limit'),
+                    'model': self.request.get('model')}
 
+            print Globals.PROCESSED_CACHED_CORPUS
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
+            print Globals.PROCESSED_CACHED_CORPUS
+            
+            # This could be model factory
+            model = None
+            if(req['model'] == 'LLDA'):
+                model = LLDATopicModel(Globals.LLDA_MODEL, Globals.LLDA_LABEL_INDEX, Globals.PROCESSED_CACHED_CORPUS)
+            else:
+                model = LDATopicModel(Globals.LDA_MODEL)
+                
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(Globals.PROCESSED_CACHED_CORPUS)
+            (topics, links) = TopicManager().getTopics(model, Globals.PROCESSED_CACHED_CORPUS)
 
             #for extracted in topics:
             #    #for word in extracted.words:

@@ -23,7 +23,7 @@ class Cron(webapp2.RequestHandler):
         pubmed = PubmedRetriever()
         #todo update
         NO_DOCS = 15
-        papers = pubmed.getDocumentsIf("diabetes", NO_DOCS)
+        papers = pubmed.getDocumentsIf("diabetes", NO_DOCS, "2006", "2016")
 
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
         # stemmer = SnowballStemmer("english") # algorithmic(Porter) stemmer
@@ -48,13 +48,6 @@ class Cron(webapp2.RequestHandler):
 
         # Train unsupervised LDA model
         LDATopicModel().trainModel() #malletCorpus
-
-        # group abstract per topic
-        #for i in range(0,10):
-        #    print model.get_document_topics(mm[i])
-        #gensim.corpora.mmcorpus.MmCorpus.serialize('corpus_training.mm', corpus)
-        #mm = gensim.corpora.mmcorpus.MmCorpus('corpus_training.mm') # `mm` document stream now has random access
-        # either get abbreviatons from first occurence in text or get it from some web service
 
 # TODO : Have different routes for different training sets
 application = webapp2.WSGIApplication([('/cron', Cron)], debug=True)

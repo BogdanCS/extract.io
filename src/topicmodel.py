@@ -1,5 +1,8 @@
 import logging
 import gensim
+import io
+import json
+import re
 
 from abc import ABCMeta, abstractmethod   
 from operator import itemgetter
@@ -25,10 +28,10 @@ class LLDATopicModel(TopicModel):
     #   If the model has been passed, also pass the label names for each 
     #   label in the training set
     # - Pass a test dataset for inference
-    #   or pass it later using inferLabels
-    def __init__(self, model=None, trainLabels=None, dataset=None):
+    #   or pass it later using inferTopics
+    def __init__(self, model=None, uniqTrainLabels=None, testDataset=None):
         self.model = model
-        self.trainLabels = trainLabels
+        self.uniqTrainLabels = uniqTrainLabels
 
         self.results = None
         self.trueLabels = None
@@ -36,8 +39,8 @@ class LLDATopicModel(TopicModel):
         # corresponds to labelNames[i]
         self.labelNames = None
         
-        if self.model and dataset:
-            inferLabels(dataset)
+        if self.model and testDataset:
+            self.inferTopics(testDataset)
             
     def trainModel(self, malletCorpus, labels):
         logging.info("Train supervised LDA")
@@ -48,7 +51,7 @@ class LLDATopicModel(TopicModel):
         # malletCorpus is a string formatted in mallet style, indexed by PMID
         # labels dictionary where key is PMID and value is a string of space
         # separated labels
-        (train_space, train_labels) = self.__unpack(malletCorpus, labels)
+        (train_space, train_labels) = self.__unpackMallet(malletCorpus, labels)
         print train_space
         print train_labels
 
@@ -56,48 +59,59 @@ class LLDATopicModel(TopicModel):
         stmt.train(train_space, train_labels)
         
         # Store individual unique labels for later use
-        self.trainLabels = []
+        self.uniqTrainLabels = []
         seenLabels = set()
         for labelString in train_labels:
             for label in labelString.split():
                 if label not in seenLabels:
-                    self.trainLabels.append(label)
+                    self.uniqTrainLabels.append(label)
                     seenLabels.add(label)
                     
-        # write to file ??
+        with io.FileIO(Globals.CORPUS_LABELS_IDX_PATH, "w") as file:
+            file.write(json.dumps(self.uniqTrainLabels))
 
         # Load the newly trained model and update cache
         model = labellda.STMT(Globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         Globals.LLDA_MODEL = model
         
-    def inferLabels(self, dataset):
+    def inferTopics(self, dataset):
         if not self.model:
             raise Exception("Model has not been trained")
 
-        (test_space, test_labels) = _unpack(dataset)
+        (test_space, test_labels) = self.__unpackDocInfo(dataset)
         self.model.test(test_space, test_labels)
         
         (self.trueLabels, self.results) = self.model.results(test_labels, array=True)
-        self.labelNames = __getLabelNames(test_labels)
+        self.labelNames = self.__getLabelsNames(test_labels)
 
-    def getTopicComposition(docInfo):
+    def getTopicComposition(self, docInfo):
         output = []
         
-        if not results:
+        if self.results is None:
             raise Exception("No test set has been provided")
             
-        docResults = results[docInfo.index]
+        print docInfo.index
+        docResults = self.results[docInfo.index]
         # Convert to list of tuples
         for index, prob in enumerate(docResults):
-            output.append(tuple(index, prob))
+            output.append((index, prob))
             
         # Filter out unlikely labels
         # Need to normalise topic proabilities with the other models
         output = [(index, prob) for (index, prob) in output if prob > Globals.TOPIC_PROB_THRESHOLD]
         return output
             
-    # need to normalise this for both training and testing use
-    def __unpack(self, malletCorpus, labels):
+    def __unpackDocInfo(self, dataset):
+        train_space = []
+        train_labels = []
+        for docUID, docInfo in dataset.iteritems():
+            train_space.append(docInfo.text)
+            train_labels.append(docInfo.labels)
+        print "hm"
+        print len(train_space)
+        return (tuple(train_space), tuple(train_labels))
+            
+    def __unpackMallet(self, malletCorpus, labels):
         train_space = []
         train_labels = []
         for line in malletCorpus.splitlines():
@@ -106,21 +120,24 @@ class LLDATopicModel(TopicModel):
             print components[0]
             print labels[components[0]]
             train_labels.append(labels[components[0]])
-        print len(train_space)
-        print len(train_labels)
-        self.__saveUniqueLabelIdx(train_labels)
         return (tuple(train_space), tuple(train_labels))
         
     def getTopicName(self, topicId):
-        return self.labelNames[topicId]
+        print self.labelNames[topicId]
+        # We are storing multi word label names as camel case - convert back to original version
+        tokens = re.findall('[^0-9a-zA-Z][0-9A-Z][^A-Z-]*', self.labelNames[topicId])
+        return tokens
 
     def __getLabelsNames(self, testLabels):
         labelSet = set()
         for labelString in testLabels:
+            print "hm"
+            print labelString
             for label in labelString.split():
+                print label
                 labelSet.add(label)
                 
-        return [label for label in trainLabels if label in labelSet]
+        return [label for label in self.uniqTrainLabels if label in labelSet]
     
 class LDATopicModel(TopicModel):
     # Pass a previously trained LDA model
