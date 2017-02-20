@@ -35,13 +35,15 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
             
-            ldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
+            ldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
             lldamodel = LDATopicModel(globals.LDA_MODEL)
                 
             # Retrieve topics and links
             (ldaTopics, ldaLinks) = TopicManager().getTopics(ldamodel, globals.PROCESSED_CACHED_CORPUS)
             (lldaTopics, lldaLinks) = TopicManager().getTopics(lldamodel, globals.PROCESSED_CACHED_CORPUS)
             
+            # Compute cosine similarity between topics and then get links
+
         except Exception, e:
             traceback.print_exc()
             self.response.out.write(json.dumps({"error":str(e)}))
@@ -67,7 +69,7 @@ class RPCNewModelHandler(webapp2.RequestHandler):
             # This could be model factory
             model = None
             if(req['model'] == 'LLDA'):
-                model = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
+                model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
             else:
                 model = LDATopicModel(globals.LDA_MODEL)
 
@@ -95,7 +97,7 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             # This could be model factory
             model = None
             if(req['model'] == 'LLDA'):
-                model = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
+                model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
             else:
                 model = LDATopicModel(globals.LDA_MODEL)
                 
@@ -116,6 +118,9 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
 
             print json.dumps({"topics" : topics,
                               "links"  : links}, default=lambda o: o.__dict__)
+            # "docs" : docs
+            # topics is going to have a link to this docs which is going to contain
+            # full text, all topics, snippets for each topic
             
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,

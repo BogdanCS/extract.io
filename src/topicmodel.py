@@ -31,15 +31,14 @@ class LLDATopicModel(TopicModel):
     #   label in the training set
     # - Pass a test dataset for inference
     #   or pass it later using inferTopics
-    def __init__(self, model=None, uniqTrainLabels=None, testDataset=None):
+    def __init__(self, model=None, testDataset=None):
         self.model = model
-        self.uniqTrainLabels = uniqTrainLabels
 
         self.results = None
         self.trueLabels = None
-        # The ith element in any row from results/trueLabels
-        # corresponds to labelNames[i]
-        self.labelNames = None
+        # Mapping between label name and words associated with label
+        # The indices correspond with the columns in results and trueLabels
+        self.words = None
         
         if self.model and testDataset:
             self.inferTopics(testDataset)
@@ -60,21 +59,6 @@ class LLDATopicModel(TopicModel):
         stmt = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         stmt.train(train_space, train_labels)
         
-        # Here we are replicating TMT behaviour
-        # Consider moving this to a common library
-        # Store individual unique labels for later use
-        self.uniqTrainLabels = []
-        seenLabels = set()
-        for labelString in train_labels:
-            for label in labelString.split():
-                if label not in seenLabels:
-                    self.uniqTrainLabels.append(label)
-                    seenLabels.add(label)
-                    
-        # TODO: Use file written by TMT
-        with io.FileIO(globals.CORPUS_LABELS_IDX_PATH, "w") as file:
-            file.write(json.dumps(self.uniqTrainLabels))
-
         # Load the newly trained model and update cache
         model = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         globals.LLDA_MODEL = model
@@ -86,8 +70,7 @@ class LLDATopicModel(TopicModel):
         (test_space, test_labels) = self.__unpackDocInfo(dataset)
         self.model.test(test_space, test_labels)
         
-        (self.trueLabels, self.results) = self.model.results(test_labels, array=True)
-        self.labelNames = self.__getLabelsNames(test_labels)
+        (self.trueLabels, self.results, self.words) = self.model.results(test_labels, array=True)
 
     def getTopicComposition(self, docInfo):
         output = []
@@ -123,22 +106,13 @@ class LLDATopicModel(TopicModel):
         return (tuple(train_space), tuple(train_labels))
         
     def getTopicWords(self, topicId):
-        return [("", 0.0)]
+        return self.words[topicId][1]
         
     def getTopicName(self, topicId):
         # We are storing multi word label names as camel case - convert back to original version
-        tokens = re.findall('[0-9a-zA-Z][^A-Z-]*', self.labelNames[topicId])
+        tokens = re.findall('[0-9a-zA-Z][^A-Z-]*', self.words[topicId][0])
         return tokens
 
-    # Filter out training labels that are not in the test dataset
-    def __getLabelsNames(self, testLabels):
-        labelSet = set()
-        for labelString in testLabels:
-            for label in labelString.split():
-                labelSet.add(label)
-                
-        return [label for label in self.uniqTrainLabels if label in labelSet]
-    
 class LDATopicModel(TopicModel):
     # Pass a previously trained LDA model
     # or create an empty model and train it later by calling
@@ -165,7 +139,8 @@ class LDATopicModel(TopicModel):
         return self.model.get_document_topics(bow)
 
     def getTopicWords(self, topicId):
-        return self.model.show_topic(topicId, topn=len(self.model.id2word))
+        #return self.model.show_topic(topicId, topn=len(self.model.id2word))
+        return self.model.show_topic(topicId, topn=globals.WORDS_PER_TOPIC)
         
     # For unsupervised LDA we don't have a name (i.e label) for topics
     # We return the top 5 words associated with the topic

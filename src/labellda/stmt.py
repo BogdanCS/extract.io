@@ -7,8 +7,9 @@ from os import path, remove, sep
 from shutil import rmtree
 from glob import glob
 from inspect import isgenerator
-from sys import version_info
+import sys
 import logging
+import gzip
 
 # Authors:      Chris Emmery
 # References:   Ramage, Hall, Nallapati, Manning (2009)
@@ -151,7 +152,7 @@ class STMT(object):
         csv_writer = writer(csv_file)
         for i, zipped in enumerate(zip(labels, space)):
             line = [str(i + 1), zipped[0], zipped[1]]
-            if version_info.major < 3:  # fix py2 compat
+            if sys.version_info.major < 3:  # fix py2 compat
                 line = [i.encode('utf8') for i in line]
             csv_writer.writerow(line)
         csv_file.close()
@@ -235,11 +236,9 @@ class STMT(object):
         if 'NaN' in predicted_row:  # don't wanna return NaN
             return
         else:
-            print label_index
             vector = [(1 if label_index[i] in gold_standard else 0,
                        float(predicted_row[i + 1])) for i in
                       range(len(label_index))]
-            print vector
             return vector
 
     def get_scores(self, label_index, predicted_weights, true_labels):
@@ -273,19 +272,17 @@ class STMT(object):
         y_true = []
         y_score = []
         for predicted_row, true_row in zip(predicted_weights, true_labels):
-            gold_standard = true_row.lower().split()
+            gold_standard = true_row.split()
             rank, prob = zip(*self.m_incidence(predicted_row, label_index,
                                                gold_standard))
-            #print rank
-            #print prob
+            # Is this ok?
             if 1 in rank:
                 y_true.append(rank)
                 y_score.append(prob)
 
-        #print y_true
         return y_true, y_score
 
-    def to_array(self, y_true, y_score):
+    def to_array(self, y_true, y_score, y_words):
         """To sklean-ready array.
 
         Converts the incidence matrix and its probabilites to a numpy format.
@@ -317,16 +314,17 @@ class STMT(object):
                     c[i] += y
             return [key for key, value in c.items() if value == 0]
 
-        def lab_reduce(y_true, y_score):
+        def lab_reduce(y_true, y_score, y_words):
             empty_indices = scan_empty(y_true)
             i = 0
             for k in empty_indices:
                 y_true = scipy.delete(y_true, k-i, 1)
                 y_score = scipy.delete(y_score, k-i, 1)
+                del y_words[k-i]
                 i += 1
-            return y_true, y_score
+            return y_true, y_score, y_words
 
-        return lab_reduce(np.asarray(y_true), np.asarray(y_score))
+        return lab_reduce(np.asarray(y_true), np.asarray(y_score), y_words)
 
     def results(self, true_labels, array=False):
         """Results grabber.
@@ -349,22 +347,49 @@ class STMT(object):
             List of lists incidence matrix (binary) and list of lists document
             topic probabilities.
         """
+        
+        logging.info("Retrieving results")
+
         DTDA = 'document-topic-distributions-res'  # doctop file
         LIDX = '00000{0}label-index'.format(sep)   # label index
+        TIDX = '00000{0}term-index'.format(sep)   # term index
+        # TBU: 00400 shouldn't be hardcoded
+        TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        #TWOR = '{0}_{1}-top-terms'.format(self.name, 'test') # top words per topic/label
 
         # Associate label index with words/label(topic)
         # and return a list of lists of words
         # go through the same filtering (toArray)
 
+        
         orf = open("{0}{1}_{2}{3}{4}.txt".format(
             self.dir, self.name, 'train', sep, LIDX), 'r')
-        label_index = orf.read().lower().split('\n')[:-1]
+        label_index = orf.read().split('\n')[:-1]
+        
+        ter = open("{0}{1}_{2}{3}{4}.txt".format(
+            self.dir, self.name, 'train', sep, TIDX), 'r')
+        term_index = ter.read().split('\n')[:-1]
+        
+        #wor = open("{0}{1}_{2}{3}{4}.csv".format(
+        #    self.dir, self.name, 'train', sep, TWOR), 'r')
+        #words = wor.read().split('\n')[1:-1]
+        #words = [(topicWords.split(',',1))[1] for topicWords in words]
+        # List of tuples words[topicId] = list((word, prob))
+        words = []
+        with gzip.open("{0}{1}_{2}{3}{4}.csv.gz".format(
+                self.dir, self.name, 'train', sep, TWOR), 'r') as f:
+            for line in f:
+                words.append(self.createWordProb(term_index, line))
 
         lbf = \
             open("{0}{1}_{2}{3}{4}_{5}-{6}.csv".format(
                 self.dir, self.name, 'train', sep, self.name, 'test', DTDA),
                 'r')
         predicted_weights = reader(lbf)
+
+        # y_words is a list of tuples (label name, list(words/topic))
+        y_words = self.getLabelWordsMapping(label_index, words)
+        logging.info("Size in bytes of y_words: " + str(sys.getsizeof(y_words)))
 
         y_true, y_score = self.get_scores(label_index, predicted_weights,
                                           true_labels)
@@ -373,10 +398,26 @@ class STMT(object):
         orf.close()
 
         if array:
-            y_true, y_score = self.to_array(y_true, y_score)
+            y_true, y_score, y_words = self.to_array(y_true, y_score, y_words)
 
         self.cleanup(step='results')
-        return y_true, y_score
+        return y_true, y_score, y_words
+
+    def createWordProb(self, term_index, line):
+        output = []
+        for idx, prob in enumerate(line.split(',')):
+            output.append((term_index[idx], float(prob)))
+                          
+        sorted(output, key=lambda x: x[1], reverse=True)
+        #globals.WORDS_PER_TOPIC
+        return output[:50]
+        
+    def getLabelWordsMapping(self, label_index, words):
+        y_words = []
+        for index in range(0, len(label_index)):
+            y_words.append((label_index[index], words[index]))
+            
+        return y_words
 
     def cleanup(self, rmall=False, step=False):
         """Cleanup module.
@@ -417,7 +458,7 @@ class STMT(object):
         Checks if the given space is given in a generator for batching, writes
         it out to a csv with self.store, then self.boot-s the model in either
         train or test mode. If it's in test, it will return the results so that
-        self,results does not have to be used.
+        self.results does not have to be used.
 
         Parameters
         ----------
