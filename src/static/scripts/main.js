@@ -1,9 +1,10 @@
 (function() {
 
-  var LIMIT = 500;
+  var LIMIT = 50;
 
   var keyword = "diabetes",
-    response;
+      model = "LLDA",
+      response;
 
   var startDatepickerState = 0,
       endDatepickerState = 0,
@@ -16,9 +17,8 @@
      * initialize date picker
      */
     $("#startdatepicker").datepicker({
-      dateFormat: "dd.mm.y",
-      minDate: new Date(757382400), // 1 January 1994
-      maxDate: new Date(),
+      dateFormat: "dd/mm/yy",
+      minDate: "01/01/1994", 
       onSelect: function(date) {
 	toggleDatepicker("#startdatepicker", "#startDatepickerBtn", true);
 	setDateText(true, "#startdatepicker", "startDateText");  
@@ -26,17 +26,17 @@
       }
     });
     $("#enddatepicker").datepicker({
-      dateFormat: "dd.mm.y",
-      minDate: new Date(757382400), // 1 January 1994
-      maxDate: new Date(),
+      dateFormat: "dd/mm/yy",
+      minDate: "01/01/1994", 
       onSelect: function(date) {
 	toggleDatepicker("#enddatepicker", "#endDatepickerBtn", false);
 	setDateText(true, "#enddatepicker", "endDateText");  
+	// TODO - have a submit button
 	removeTopics();
       }
     });
-    $("#startdatepicker").datepicker("setDate", new Date());
-    $("#enddatepicker").datepicker("setDate", new Date());
+    $("#startdatepicker").datepicker("setDate", "01/01/2012");
+    $("#enddatepicker").datepicker("setDate", "01/01/2016");
     $('#startDatepickerBtn').addClass('active');
     $('#endDatepickerBtn').addClass('active');
 
@@ -83,7 +83,6 @@
 
   function getTopics() {
 
-      console.log("got here");
     // create url
     var pathArray = document.URL.split('/');
     var url = pathArray[0] + "//" + pathArray[2] + "/rpcNewSearch?keywords=" + keyword;
@@ -95,6 +94,7 @@
       url += "&start_date=" + startDate + "&end_date=" + endDate;
      
     url += "&limit=" + LIMIT;
+    url += "&model=" + model;
 
     // make call
     var http_request = new XMLHttpRequest();
@@ -238,6 +238,17 @@
     }
     return false;
   }
+    
+  function setModel(node, r) {
+    if (model != r) {
+      model = r;
+      removeTopics();
+
+      // change style
+      changeModelBtnStyle(node);
+    }
+    return false;
+  }
 
   function setDateText(date, picker, text) {
     if (date) {
@@ -251,7 +262,12 @@
   }
 
   function changeRegionBtnStyle(node) {
-    $('nav a').removeClass('current');
+    $('#regions a').removeClass('current');
+    $(node).addClass('current');
+  }
+    
+  function changeModelBtnStyle(node) {
+    $('#models a').removeClass('current');
     $(node).addClass('current');
   }
 
@@ -402,7 +418,7 @@
               sel.moveToFront();
 
               var d = this.__data__;
-              return '<div class="tipsy-topic">' + getWords(d.words) + '</div><span class="tipsy-time">' + pretifyDuration((d.score*10).toFixed(3)) + '</span>';
+              return '<div class="tipsy-topic">' + getWords(d.nameTokens) + '</div><span class="tipsy-time">' + pretifyDuration((d.score*10).toFixed(3)) + '</span>';
             }
           });
 	    
@@ -609,9 +625,15 @@
   jQuery("#cancerBtn").click(function() {
     setKeyword(this, "cancer");
   });
-
   jQuery("#diabetesBtn").click(function() {
     setKeyword(this, "diabetes");
+  });
+
+  jQuery("#ldaBtn").click(function() {
+    setModel(this, "LDA");
+  });
+  jQuery("#lldaBtn").click(function() {
+    setModel(this, "LLDA");
   });
 
   jQuery("#startDatepickerBtn").click(function() {

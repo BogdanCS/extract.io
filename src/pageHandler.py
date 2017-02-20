@@ -6,7 +6,11 @@ import logging
 import webapp2
 from google.appengine.ext.webapp import template
 #from paste import httpserver
+
+import globals
 from topicmanager import TopicManager
+from topicmodel import LDATopicModel, LLDATopicModel
+from documentmanager import DocumentManager
 
 #import jinja2
 #JINJA_ENVIRONMENT = jinja2.Environment(
@@ -25,7 +29,29 @@ class MainPage(webapp2.RequestHandler):
         #template = JINJA_ENVIRONMENT.get_template(path)
         #self.response.out.write(template.render(template_values))
 
-
+class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
+    def get(self):
+        try:
+            # Recreate PROCESSED_CACHED_CORPUS
+            DocumentManager().getDocuments(req) 
+            
+            ldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
+            lldamodel = LDATopicModel(globals.LDA_MODEL)
+                
+            # Retrieve topics and links
+            (ldaTopics, ldaLinks) = TopicManager().getTopics(ldamodel, globals.PROCESSED_CACHED_CORPUS)
+            (lldaTopics, lldaLinks) = TopicManager().getTopics(lldamodel, globals.PROCESSED_CACHED_CORPUS)
+            
+        except Exception, e:
+            traceback.print_exc()
+            self.response.out.write(json.dumps({"error":str(e)}))
+        
+#class RPCNewModelDualViewHandler(webapp2.RequestHandler):
+#    def get(self):
+        
+#class RPCDualViewHandler(webapp2.RequestHandler):
+#    def get(self):
+        
 class RPCNewModelHandler(webapp2.RequestHandler):
     """ Process RPC requests for new model. """
     """ This bypasses the corpus retrieval and preprocessing """
@@ -33,7 +59,7 @@ class RPCNewModelHandler(webapp2.RequestHandler):
 
     def get(self):
         try:
-            if not Globals.PROCESSED_CACHED_CORPUS:
+            if not globals.PROCESSED_CACHED_CORPUS:
                 raise Exception("No corpus has been processed")
         
             req = { 'model' : self.request.get('model')}
@@ -41,12 +67,12 @@ class RPCNewModelHandler(webapp2.RequestHandler):
             # This could be model factory
             model = None
             if(req['model'] == 'LLDA'):
-                model = LLDATopicModel(Globals.LLDA_MODEL, Globals.LLDA_LABEL_INDEX, Globals.PROCESSED_CACHED_CORPUS)
+                model = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
             else:
-                model = LDATopicModel(Globals.LDA_MODEL)
+                model = LDATopicModel(globals.LDA_MODEL)
 
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(model, Globals.PROCESSED_CACHED_CORPUS)
+            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
             
         except Exception, e:
             traceback.print_exc()
@@ -63,23 +89,21 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                     'limit': self.request.get('limit'),
                     'model': self.request.get('model')}
 
-            print Globals.PROCESSED_CACHED_CORPUS
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
-            print Globals.PROCESSED_CACHED_CORPUS
             
             # This could be model factory
             model = None
             if(req['model'] == 'LLDA'):
-                model = LLDATopicModel(Globals.LLDA_MODEL, Globals.LLDA_LABEL_INDEX, Globals.PROCESSED_CACHED_CORPUS)
+                model = LLDATopicModel(globals.LLDA_MODEL, globals.LLDA_LABEL_INDEX, globals.PROCESSED_CACHED_CORPUS)
             else:
-                model = LDATopicModel(Globals.LDA_MODEL)
+                model = LDATopicModel(globals.LDA_MODEL)
                 
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(model, Globals.PROCESSED_CACHED_CORPUS)
+            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
 
             #for extracted in topics:
-            #    #for word in extracted.words:
+            #    #for word in extracted.nameTokens:
             #    #    print word,
             #    #print
             #    for doc in extracted.docs:
@@ -105,7 +129,7 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
 #    """ Process RPC requests for getting X. """
 
 application = webapp2.WSGIApplication([('/rpcNewSearch', RPCNewSearchHandler),
-                                       ('/rpcNewModel', RPCNewModel),
+                                       ('/rpcNewModel', RPCNewModelHandler),
                                        ('/.*', MainPage)], debug=True)
 
 if __name__ == "__main__":

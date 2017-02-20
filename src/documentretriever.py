@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod   
 from Bio import Entrez
 from time import sleep
-from globals import Globals
 from random import randint
+import globals
 
 # Abstract super class for the Retriever classes
 class DocumentRetriever:
@@ -40,7 +40,7 @@ class PubmedRetriever(DocumentRetriever):
         results = []
 
         # Split the id list into evenly sized chunks
-        id_list = [id_list[i:i + Globals.PUBMED_FETCH_LIMIT] for i in xrange(0, len(id_list), Globals.PUBMED_FETCH_LIMIT)]
+        id_list = [id_list[i:i + globals.PUBMED_FETCH_LIMIT] for i in xrange(0, len(id_list), globals.PUBMED_FETCH_LIMIT)]
 
         Entrez.email = 'bogdan.stoian11@gmail.com'
         for chunk in id_list:

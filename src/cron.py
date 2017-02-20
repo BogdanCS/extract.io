@@ -5,7 +5,7 @@ import logging
 
 #from nltk.stem import *
 
-from globals import Globals
+import globals
 from documentretriever import PubmedRetriever
 from preprocesser import PubmedPreprocesser
 from preprocesser import PostPreprocesser
@@ -30,15 +30,15 @@ class Cron(webapp2.RequestHandler):
         prepro = PubmedPreprocesser(stemmer)
         postpre = PostPreprocesser()
         (malletCorpus, labels) = MalletConverter.xmlToMallet(papers, prepro, postpre,
-                                                             Globals.PUBMED_ID_FIELD_NAME, 
-                                                             Globals.PUBMED_ABSTRACT_FIELD_NAME,
-                                                             Globals.PUBMED_LABELS_FIELD_NAME)
+                                                             globals.PUBMED_ID_FIELD_NAME, 
+                                                             globals.PUBMED_ABSTRACT_FIELD_NAME,
+                                                             globals.PUBMED_LABELS_FIELD_NAME)
 
         # Store corpus and labels
         logging.info("Start writing to file")
-        with io.FileIO(Globals.CORPUS_PATH, "w") as file:
+        with io.FileIO(globals.CORPUS_PATH, "w") as file:
             file.write(malletCorpus.encode('utf8'))
-        with io.FileIO(Globals.CORPUS_LABELS_PATH, "w") as file:
+        with io.FileIO(globals.CORPUS_LABELS_PATH, "w") as file:
             file.write(json.dumps(labels))
 
         logging.info("Stop writing to file")

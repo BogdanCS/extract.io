@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-class Globals:
+class globals:
     _1_DAY = 86400  # 24 * 60 * 60 seconds
     _1_WEEK = 604800  # 7 * 24 * 60 * 60 seconds
     _1_MONTH = 2592000  # 30 * 24 * 60 * 60 seconds

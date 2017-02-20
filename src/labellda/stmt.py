@@ -235,9 +235,11 @@ class STMT(object):
         if 'NaN' in predicted_row:  # don't wanna return NaN
             return
         else:
+            print label_index
             vector = [(1 if label_index[i] in gold_standard else 0,
                        float(predicted_row[i + 1])) for i in
                       range(len(label_index))]
+            print vector
             return vector
 
     def get_scores(self, label_index, predicted_weights, true_labels):
@@ -274,10 +276,13 @@ class STMT(object):
             gold_standard = true_row.lower().split()
             rank, prob = zip(*self.m_incidence(predicted_row, label_index,
                                                gold_standard))
+            #print rank
+            #print prob
             if 1 in rank:
                 y_true.append(rank)
                 y_score.append(prob)
 
+        #print y_true
         return y_true, y_score
 
     def to_array(self, y_true, y_score):
@@ -346,6 +351,10 @@ class STMT(object):
         """
         DTDA = 'document-topic-distributions-res'  # doctop file
         LIDX = '00000{0}label-index'.format(sep)   # label index
+
+        # Associate label index with words/label(topic)
+        # and return a list of lists of words
+        # go through the same filtering (toArray)
 
         orf = open("{0}{1}_{2}{3}{4}.txt".format(
             self.dir, self.name, 'train', sep, LIDX), 'r')

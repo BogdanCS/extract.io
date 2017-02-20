@@ -23,15 +23,19 @@
 from sortedcontainers import SortedList
 
 class TopicInformation(object):
-    def __init__(self, uid, words):
+    def __init__(self, uid, nameTokens, wordsProb):
         self.uid = uid
-        self.words = words
+        self.nameTokens = nameTokens
         # Inverted index
         self.docs = []
         # The years when the documents stored in self.docs have been published
         # Keep duplicate values so we can create a histogram for temporal trends / topic
         self.years = SortedList()
         self.score = 0
+        
+        # Words associated with topic and their probability
+        # list of tuples
+        self.wordsProb = wordsProb
         
     # No longer need for the SortedList
     # Convert to regular list

@@ -5,32 +5,31 @@ import json
 import gensim
 import labellda
 
-class Globals:
-    # TODO try to make it work with POST
-    # Might be because of Google App Engine restrictions
-    # Alternative: cache for presentation
-    PUBMED_FETCH_LIMIT = 170
-    PUBMED_SEARCH_URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
-    PUBMED_ABSTRACT_FIELD_NAME = "AbstractText"
-    PUBMED_ID_FIELD_NAME = "PMID"
-    PUBMED_LABELS_FIELD_NAME = "MeshHeadingList"
-    PUBMED_PUBLISH_YEAR_FIELD_NAME = "Year" # Keep in mind this is not necessarily publish year, might be revise year, completion year. however this shouldn't affect us
-    
-    TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
-    CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
-    CORPUS_LABELS_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels"
-    CORPUS_LABELS_IDX_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels.index"
-    LLDA_MODEL_NAME = "labellda_model"
+# TODO try to make it work with POST
+# Might be because of Google App Engine restrictions
+# Alternative: cache for presentation
+PUBMED_FETCH_LIMIT = 170
+PUBMED_SEARCH_URL = "https://www.ncbi.nlm.nih.gov/pubmed/?term="
+PUBMED_ABSTRACT_FIELD_NAME = "AbstractText"
+PUBMED_ID_FIELD_NAME = "PMID"
+PUBMED_LABELS_FIELD_NAME = "MeshHeadingList"
+PUBMED_PUBLISH_YEAR_FIELD_NAME = "Year" # Keep in mind this is not necessarily publish year, might be revise year, completion year. however this shouldn't affect us
 
-    # These are only initialised once so we don't load them every
-    # time the UI sends a request
-    LDA_MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
-    LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
-    
-    CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
-    LLDA_LABEL_INDEX = json.loads(open(CORPUS_LABELS_IDX_PATH).read())
-    
-    PROCESSED_CACHED_CORPUS = {}
+TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
+CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
+CORPUS_LABELS_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels"
+CORPUS_LABELS_IDX_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels.index"
+LLDA_MODEL_NAME = "labellda_model"
 
-    # Need to normalise
-    TOPIC_PROB_THRESHOLD = 0.05
+# These are only initialised once so we don't load them every
+# time the UI sends a request
+LDA_MODEL = gensim.models.LdaModel.load(TRAINED_MODEL_PATH)
+LLDA_MODEL = labellda.STMT(LLDA_MODEL_NAME, epochs=400, mem=14000)
+
+CORPUS = gensim.corpora.MalletCorpus(CORPUS_PATH)
+LLDA_LABEL_INDEX = json.loads(open(CORPUS_LABELS_IDX_PATH).read())
+
+PROCESSED_CACHED_CORPUS = {}
+
+# Need to normalise
+TOPIC_PROB_THRESHOLD = 0.05

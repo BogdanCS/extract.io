@@ -7,7 +7,7 @@ import re
 from abc import ABCMeta, abstractmethod   
 from operator import itemgetter
 
-from globals import Globals
+import globals
 import labellda
 
 # Adapter for the underlying topic models
@@ -21,6 +21,8 @@ class TopicModel:
     def getTopicComposition(self, text) : pass
     # Returns a list of tokens(words) which are part of the name
     def getTopicName(self, topicId) : pass
+    # Returns a list of tuples (word, probability)
+    def getTopicWords(self, topicId) : pass
 
 class LLDATopicModel(TopicModel):
     # - Pass a previously trained LLDA model
@@ -55,9 +57,11 @@ class LLDATopicModel(TopicModel):
         print train_space
         print train_labels
 
-        stmt = labellda.STMT(Globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
+        stmt = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         stmt.train(train_space, train_labels)
         
+        # Here we are replicating TMT behaviour
+        # Consider moving this to a common library
         # Store individual unique labels for later use
         self.uniqTrainLabels = []
         seenLabels = set()
@@ -67,12 +71,13 @@ class LLDATopicModel(TopicModel):
                     self.uniqTrainLabels.append(label)
                     seenLabels.add(label)
                     
-        with io.FileIO(Globals.CORPUS_LABELS_IDX_PATH, "w") as file:
+        # TODO: Use file written by TMT
+        with io.FileIO(globals.CORPUS_LABELS_IDX_PATH, "w") as file:
             file.write(json.dumps(self.uniqTrainLabels))
 
         # Load the newly trained model and update cache
-        model = labellda.STMT(Globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
-        Globals.LLDA_MODEL = model
+        model = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
+        globals.LLDA_MODEL = model
         
     def inferTopics(self, dataset):
         if not self.model:
@@ -90,7 +95,6 @@ class LLDATopicModel(TopicModel):
         if self.results is None:
             raise Exception("No test set has been provided")
             
-        print docInfo.index
         docResults = self.results[docInfo.index]
         # Convert to list of tuples
         for index, prob in enumerate(docResults):
@@ -98,7 +102,7 @@ class LLDATopicModel(TopicModel):
             
         # Filter out unlikely labels
         # Need to normalise topic proabilities with the other models
-        output = [(index, prob) for (index, prob) in output if prob > Globals.TOPIC_PROB_THRESHOLD]
+        output = [(index, prob) for (index, prob) in output if prob > globals.TOPIC_PROB_THRESHOLD]
         return output
             
     def __unpackDocInfo(self, dataset):
@@ -107,8 +111,6 @@ class LLDATopicModel(TopicModel):
         for docUID, docInfo in dataset.iteritems():
             train_space.append(docInfo.text)
             train_labels.append(docInfo.labels)
-        print "hm"
-        print len(train_space)
         return (tuple(train_space), tuple(train_labels))
             
     def __unpackMallet(self, malletCorpus, labels):
@@ -117,24 +119,22 @@ class LLDATopicModel(TopicModel):
         for line in malletCorpus.splitlines():
             components = line.split(None, 2)
             train_space.append(components[2])
-            print components[0]
-            print labels[components[0]]
             train_labels.append(labels[components[0]])
         return (tuple(train_space), tuple(train_labels))
         
+    def getTopicWords(self, topicId):
+        return [("", 0.0)]
+        
     def getTopicName(self, topicId):
-        print self.labelNames[topicId]
         # We are storing multi word label names as camel case - convert back to original version
-        tokens = re.findall('[^0-9a-zA-Z][0-9A-Z][^A-Z-]*', self.labelNames[topicId])
+        tokens = re.findall('[0-9a-zA-Z][^A-Z-]*', self.labelNames[topicId])
         return tokens
 
+    # Filter out training labels that are not in the test dataset
     def __getLabelsNames(self, testLabels):
         labelSet = set()
         for labelString in testLabels:
-            print "hm"
-            print labelString
             for label in labelString.split():
-                print label
                 labelSet.add(label)
                 
         return [label for label in self.uniqTrainLabels if label in labelSet]
@@ -147,22 +147,26 @@ class LDATopicModel(TopicModel):
         self.model = model
         self.bowConverter = gensim.corpora.Dictionary()
         if model:
-            _ = self.bowConverter.merge_with(Globals.CORPUS.id2word) 
+            _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
         
     def trainModel(self, corpus=None, labels=None): # get Mallet corpus from file
         logging.info("Train unsupervised LDA")
-        corpus = gensim.corpora.MalletCorpus(Globals.CORPUS_PATH)
-        _ = self.bowConverter.merge_with(Globals.CORPUS.id2word) 
+        corpus = gensim.corpora.MalletCorpus(globals.CORPUS_PATH)
+        _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
         self.model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=8, num_topics=75, iterations=500)
-        self.model.save(Globals.TRAINED_MODEL_PATH)
+        self.model.save(globals.TRAINED_MODEL_PATH)
         
         # Update cache
         LDA_MODEL = self.model
 
     def getTopicComposition(self, docInfo):
         bow = self.bowConverter.doc2bow(docInfo.text.split())
+        # globals.THRESHOLD ?
         return self.model.get_document_topics(bow)
 
+    def getTopicWords(self, topicId):
+        return self.model.show_topic(topicId, topn=len(self.model.id2word))
+        
     # For unsupervised LDA we don't have a name (i.e label) for topics
     # We return the top 5 words associated with the topic
     def getTopicName(self, topicId):

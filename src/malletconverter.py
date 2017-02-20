@@ -56,13 +56,16 @@ class MalletConverter:
     def getLabels(labelField, doc):
         output = ""
         meshHeadings = MalletConverter.__find(labelField, doc).next()
+        if len(meshHeadings)==0:
+            # TODO: Need to handle this - i.e take document out of the corpus
+            logging.error("No headings found")
+
         for heading in meshHeadings:
             processedHeading = "".join(reversed(heading["DescriptorName"].split(",")))
             processedHeading = "".join(processedHeading.split())
             output += processedHeading + " "
             
         output = output[:-1]
-        logging.info("Extracted headings: " + output)
         return output 
 
     @staticmethod

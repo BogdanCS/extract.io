@@ -1,6 +1,6 @@
 import logging
 
-from globals import Globals
+import globals
 from documentclusterer import TopTopicClusterer
 from topicinformation import TopicInformation
 from linkinformation import LinkInformation
@@ -52,7 +52,8 @@ class TopicManager():
             for topicId, prob in topicComposition:
                 if(topicId not in topics):
                     nameTokens = model.getTopicName(topicId) 
-                    topics[topicId] = TopicInformation(topicId, nameTokens)
+                    wordsProb = model.getTopicWords(topicId)
+                    topics[topicId] = TopicInformation(topicId, nameTokens, wordsProb)
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
                 
