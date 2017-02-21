@@ -85,16 +85,17 @@
 
     // create url
     var pathArray = document.URL.split('/');
-    var url = pathArray[0] + "//" + pathArray[2] + "/rpcNewSearch?keywords=" + keyword;
+    var requestType = model == "DUAL" ? "rpcNewSearchDualView" : "rpcNewSearch"
+      
+    var url = pathArray[0] + "//" + pathArray[2] + "/" + requestType + "?keywords=" + keyword;
 
-      startDate = Math.floor(jQuery("#startdatepicker").datepicker("getDate")
-        .getTime() / 1000);
-      endDate = Math.floor(jQuery("#enddatepicker").datepicker("getDate")
-        .getTime() / 1000);
-      url += "&start_date=" + startDate + "&end_date=" + endDate;
+    startDate = Math.floor(jQuery("#startdatepicker").datepicker("getDate").getTime() / 1000);
+    endDate = Math.floor(jQuery("#enddatepicker").datepicker("getDate").getTime() / 1000);
+    url += "&start_date=" + startDate + "&end_date=" + endDate;
      
     url += "&limit=" + LIMIT;
-    url += "&model=" + model;
+    if (model != "DUAL")
+	url += "&model=" + model;
 
     // make call
     var http_request = new XMLHttpRequest();
@@ -634,6 +635,9 @@
   });
   jQuery("#lldaBtn").click(function() {
     setModel(this, "LLDA");
+  });
+  jQuery("#dualBtn").click(function() {
+    setModel(this, "DUAL");
   });
 
   jQuery("#startDatepickerBtn").click(function() {

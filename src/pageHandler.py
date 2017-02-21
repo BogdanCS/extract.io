@@ -10,6 +10,7 @@ from google.appengine.ext.webapp import template
 import globals
 from topicmanager import TopicManager
 from topicmodel import LDATopicModel, LLDATopicModel
+from topiclinker import DummyTopicLinker, ComparisonTopicLinker
 from documentmanager import DocumentManager
 
 #import jinja2
@@ -32,17 +33,41 @@ class MainPage(webapp2.RequestHandler):
 class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
     def get(self):
         try:
+            req = { 'keywords': self.request.get('keywords'),
+                    'startDate': self.request.get('start_date'),
+                    'endDate': self.request.get('end_date'),
+                    'limit': self.request.get('limit')}
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
             
-            ldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
-            lldamodel = LDATopicModel(globals.LDA_MODEL)
+            lldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
+            ldamodel = LDATopicModel(globals.LDA_MODEL)
                 
             # Retrieve topics and links
-            (ldaTopics, ldaLinks) = TopicManager().getTopics(ldamodel, globals.PROCESSED_CACHED_CORPUS)
-            (lldaTopics, lldaLinks) = TopicManager().getTopics(lldamodel, globals.PROCESSED_CACHED_CORPUS)
+            (ldaTopics, _) = TopicManager().getTopics(ldamodel, 
+                                                      globals.PROCESSED_CACHED_CORPUS,
+                                                      DummyTopicLinker())
+            (lldaTopics, _) = TopicManager().getTopics(lldamodel, 
+                                                       globals.PROCESSED_CACHED_CORPUS,
+                                                       DummyTopicLinker())
             
+            # We need to make sure the UIDs are unique between the two sets of topics
+            for topic in lldaTopics:
+                topic.uid = -topic.uid
+                
             # Compute cosine similarity between topics and then get links
+            # Links are from LLDA topic(source to LDA topic(target)
+            links = []
+            ComparisonTopicLinker().getLinks(lldaTopics, ldaTopics, links)
+            
+            topics = ldaTopics + lldaTopics
+
+            print json.dumps({"topics" : topics,
+                              "links"  : links}, default=lambda o: o.__dict__)
+            
+            # Set json response
+            self.response.out.write(json.dumps({"topics" : topics,
+                                                "links"  : links}, default=lambda o: o.__dict__))
 
         except Exception, e:
             traceback.print_exc()
@@ -118,7 +143,7 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
 
             print json.dumps({"topics" : topics,
                               "links"  : links}, default=lambda o: o.__dict__)
-            # "docs" : docs
+                            # "docs" : docs
             # topics is going to have a link to this docs which is going to contain
             # full text, all topics, snippets for each topic
             
@@ -135,6 +160,7 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
 
 application = webapp2.WSGIApplication([('/rpcNewSearch', RPCNewSearchHandler),
                                        ('/rpcNewModel', RPCNewModelHandler),
+                                       ('/rpcNewSearchDualView', RPCNewSearchDualViewHandler),
                                        ('/.*', MainPage)], debug=True)
 
 if __name__ == "__main__":

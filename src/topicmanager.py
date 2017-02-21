@@ -8,12 +8,12 @@ from topiclinker import SimpleTopicLinker
 
 class TopicManager():
 
-    def getTopics(self, model, docs):
+    def getTopics(self, model, docs, linker=SimpleTopicLinker()):
         logging.info("getTopics()")
         
         # Extract basic information from our document set about each topic
         # We keep the model as a global variables so we don't have to load it each time
-        (topics, links) = self.__getTopicsBasicInfo(model, docs)
+        (topics, links) = self.__getTopicsBasicInfo(model, docs, linker)
         
         # Drop the topic id keys as we don't need them anymore
         # Convert the binary tree container in which we store years
@@ -27,14 +27,14 @@ class TopicManager():
         # Drop weak links
         link_list = []
         for (source, target), values in links.iteritems():
-            if(SimpleTopicLinker().strongLink(values)):
+            if(linker.strongLink(values)):
                 link_list.append(LinkInformation(source, 
                                                  target, 
-                                                 SimpleTopicLinker().getFinalValue(values)))
+                                                 linker.getFinalValue(values)))
         
         return (topic_list, link_list)
         
-    def __getTopicsBasicInfo(self, model, docs):
+    def __getTopicsBasicInfo(self, model, docs, linker):
         # key - topic id
         # value - TopicInformation
         topics = {}
@@ -45,9 +45,8 @@ class TopicManager():
         for docId, docInfo in docs.iteritems():
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.getTopicComposition(docInfo)
-            print topicComposition
 
-            SimpleTopicLinker().getLinks(topicComposition, links)
+            linker.getLinks(topicComposition, links)
 
             for topicId, prob in topicComposition:
                 if(topicId not in topics):
