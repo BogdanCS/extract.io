@@ -62,6 +62,9 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             
             topics = ldaTopics + lldaTopics
 
+            ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
+            lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
+
             print json.dumps({"topics" : topics,
                               "links"  : links}, default=lambda o: o.__dict__)
             
@@ -128,6 +131,8 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                 
             # Retrieve topics and links
             (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
+
+            print model.getPerplexity()
 
             #for extracted in topics:
             #    #for word in extracted.nameTokens:

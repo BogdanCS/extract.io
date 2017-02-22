@@ -1,8 +1,11 @@
 import logging
+import time
 import gensim
 import io
 import json
 import re
+import numpy as np 
+import sklearn.metrics as skm 
 
 from abc import ABCMeta, abstractmethod   
 from operator import itemgetter
@@ -112,6 +115,19 @@ class LLDATopicModel(TopicModel):
         # We are storing multi word label names as camel case - convert back to original version
         tokens = re.findall('[0-9a-zA-Z][^A-Z-]*', self.words[topicId][0])
         return tokens
+        
+    def getPerplexity(self):
+        # A try to calculate perplexity in the same way as gensim
+        # there is a python implementation of LLDA that has perplexity
+        # better try to replicate that
+        return np.exp(skm.log_loss(self.trueLabels, self.results))
+        
+    def getAvgPrecisions(self):
+        return skm.average_precision_score(self.trueLabels, self.results)
+    #def getAccuracy(self):
+    # get recall
+    # get text ...
+    # skm ftw
 
 class LDATopicModel(TopicModel):
     # Pass a previously trained LDA model
@@ -122,6 +138,8 @@ class LDATopicModel(TopicModel):
         self.bowConverter = gensim.corpora.Dictionary()
         if model:
             _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
+        # Flush?
+        self.bowCache = []
         
     def trainModel(self, corpus=None, labels=None): # get Mallet corpus from file
         logging.info("Train unsupervised LDA")
@@ -135,6 +153,7 @@ class LDATopicModel(TopicModel):
 
     def getTopicComposition(self, docInfo):
         bow = self.bowConverter.doc2bow(docInfo.text.split())
+        self.bowCache.append(bow)
         # globals.THRESHOLD ?
         return self.model.get_document_topics(bow)
 
@@ -152,4 +171,16 @@ class LDATopicModel(TopicModel):
             output.append(word)
 
         return output
+        
+    def getPerplexity(self):
+        logging.info("Start getPerplexity")
+        start = time.time()
+        
+        perplexity = np.exp2(-self.model.log_perplexity(self.bowCache))
+        
+        end = time.time()
+        logging.info("Stop preprocessing. Time(sec): ")
+        logging.info(end-start)
+        
+        return perplexity
         
