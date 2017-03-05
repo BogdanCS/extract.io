@@ -13,6 +13,9 @@ from operator import itemgetter
 import globals
 import labellda
 
+from documentretriever import PubmedRetriever
+from preprocesser import PubmedPreprocesser
+
 # Adapter for the underlying topic models
 class TopicModel:
     __metaclass__ = ABCMeta
@@ -162,14 +165,28 @@ class LDATopicModel(TopicModel):
         return self.model.show_topic(topicId, topn=globals.WORDS_PER_TOPIC)
         
     # For unsupervised LDA we don't have a name (i.e label) for topics
-    # We return the top 5 words associated with the topic
+    # We will try to assign a MeSH label to the topic based on top 10 words
+    ### We return the top 5 words associated with the topic
     def getTopicName(self, topicId):
         output = []
 
-        topWords = self.model.show_topic(topicId, topn=5)
+        topWords = self.model.show_topic(topicId, topn=10)
+        
+        pubmed = PubmedRetriever()
+        query = ""
         for word, prob in topWords:
-            output.append(word)
-
+            query += word + " OR "
+        query = query[:-4]
+        candidateLabels = pubmed.getDocumentsIf(query, 10, None, None, "mesh")
+        
+        stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
+        prepro = PubmedPreprocesser(stemmer)
+        for label, text in candidateLabels.iteritems():
+            text = prepro.stemWords(
+                   prepro.removeStopWords(
+                   prepro.removePunctuation(
+                   prepro.removeCapitals(text))))
+        
         return output
         
     def getPerplexity(self):
