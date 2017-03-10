@@ -50,11 +50,8 @@ class PubmedRetriever(DocumentRetriever):
     def __getMeshLabel(self, line):
         nonLetter = ''.join(set(map(chr, range(128))) - set(ascii_letters))
         line = line.lstrip(nonLetter)
-        line = line.rstrip(nonLetter)
-        idx = line.find('[')
-        if (idx != -1):
-            line = line[:idx]
-        return "".join(reversed(line.split(",")))
+        line = line.rstrip()
+        return (" ".join(reversed(line.split(",")))).lstrip()
         
     def __fetch_details(self, id_list, dbName):
         results = []
@@ -76,8 +73,12 @@ class PubmedRetriever(DocumentRetriever):
                 text = ""
                 # Do some preliminary preprocessing
                 for line in lines:
-                    if line[0].isdigit():
-                        results.append({labelName : text})
+                    if line[0].isdigit() and line[1] == ":":
+                        # Drop subheadings
+                        idx = labelName.find('[')
+                        if (idx == -1):
+                            results.append((labelName,text))
+
                         labelName = self.__getMeshLabel(line)
                         text = ""
                     else:

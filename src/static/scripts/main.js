@@ -3,7 +3,7 @@
   var LIMIT = 50;
 
   var keyword = "diabetes",
-      model = "LLDA",
+      model = "LDA",
       response;
 
   var startDatepickerState = 0,
@@ -187,11 +187,11 @@
       }
       if (list[index]) {
         activeTipsy = $(list[index]).mouseover();
-        setTimeout(function() {
+        /*setTimeout(function() {
           $(list[index]).mouseout();
           activeTipsy = null;
           startInitialAnimation(list, index + 1);
-        }, 5000);
+        }, 5000);*/
       }
     } catch (e) {
       // TODO: handle exception
@@ -451,6 +451,17 @@
 	      });
 	  }
 
+	  function createModal(buttonId, modalText)
+	  {
+	      modal = "<div id=\"mod"+ buttonId +"\" class=\"modal\">" +
+		      "<div class=\"modal-content\">" +
+                      "<span class=\"close\" id=clo"+ buttonId +">&times;</span>" +
+                      "<p>" + modalText + "</p>" +
+                      "</div>"
+                      "</div>"
+	      return modal
+	  }
+
 	  function drawDocs(docs)
 	  {
 	     // Clear docs area
@@ -458,10 +469,28 @@
 	     area.innerHTML = null;
 
 	     listLength = docs.length;
-	     // Consider randomising the documents displayed
-	     for (var idx = 0; idx < listLength && idx < 6; idx++)
-	     {
-		 area.innerHTML += "<a href=\"" + docs[idx] + "\"> Document #" + idx + "</a>";
+	     for (var idx = 0; idx < listLength && idx < 5; idx++){
+		     lines = docs[idx].split("<br>")
+		     pmid = (lines[0].split(':'))[1]
+		     console.log(pmid)
+		     titleLength = lines[1].length < 21 ? lines[1].length : 21 
+		     title = lines[1].slice(0,titleLength) + "..."
+		     area.innerHTML += "<button id=\"but"+pmid+"\">"+title+"</button>"
+		     area.innerHTML += createModal(pmid, docs[idx])
+		 
+		     var btnid = "#but" + pmid
+		     $("#docs").on("click", btnid, function(e) {
+			 id = "mod" + (this.id).slice(3,(this.id).length)
+			 console.log(id)
+			 document.getElementById(id).style.display = "block";
+		     })
+		     
+		     // When the user clicks on <span> (x), close the modal
+		     var spanid = "#clo" + pmid
+		     $("#docs").on("click", spanid, function(e) {
+			 id = "mod" + (this.id).slice(3,(this.id).length)
+			 document.getElementById(id).style.display = "none";
+		     })
 	     }
 	      
 	     $('#docs').prepend("<br>")

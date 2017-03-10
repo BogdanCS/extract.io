@@ -62,8 +62,8 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             
             topics = ldaTopics + lldaTopics
 
-            ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
-            lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
+            #ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
+            #lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
 
             print json.dumps({"topics" : topics,
                               "links"  : links}, default=lambda o: o.__dict__)

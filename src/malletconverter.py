@@ -24,7 +24,6 @@ class MalletConverter:
                 line += pmid + " en "
                 
                 # This returns a text which has already been preprocessed
-                print dataField
                 text = MalletConverter.getDataAsString(dataField, prepro, xmlData[index])
                 
                 # Update our occurence counter used for filtering extremes
@@ -70,13 +69,18 @@ class MalletConverter:
 
     @staticmethod
     def getDataAsString(dataField, prepro, doc):
+        data = MalletConverter.getRawDataAsString(dataField, doc)
+        return MalletConverter.preprocess(prepro, data)
+        
+    @staticmethod
+    def getRawDataAsString(dataField, doc):
         data = MalletConverter.__find(dataField, doc).next()
         if isinstance(data, list) and len(data) == 0:
             raise StopIteration("Abstract not found")
         elif isinstance(data, list):
             data = data[0]
 
-        return MalletConverter.__preprocess(prepro, data)
+        return data
 
     @staticmethod
     def getField(field, doc):
@@ -106,7 +110,7 @@ class MalletConverter:
 
     #TODO - create abreviation - long form mapping from what is available in text
     @staticmethod
-    def __preprocess(prepro, line):
+    def preprocess(prepro, line):
         return prepro.stemWords(
                prepro.removeStopWords(
                prepro.removePunctuation(

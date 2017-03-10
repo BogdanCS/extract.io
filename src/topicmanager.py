@@ -21,6 +21,7 @@ class TopicManager():
         topic_list = [] 
         for v in topics.values():
             v.finaliseYears()
+            v.finaliseDocs()
             topic_list.append(v)
         
         # Convert link list dictionary to a simple list of LinkInformation

@@ -1,5 +1,6 @@
 import logging
 import time
+import hunspell
 import gensim
 import io
 import json
@@ -164,30 +165,43 @@ class LDATopicModel(TopicModel):
         #return self.model.show_topic(topicId, topn=len(self.model.id2word))
         return self.model.show_topic(topicId, topn=globals.WORDS_PER_TOPIC)
         
+    def computeOverlap(self, label, text , topWords):
+        overlap = 0.0
+        for word in label.split():
+            if word.lower() in topWords:
+                overlap += topWords[word.lower()] * 2 # title premium, is 2 the right value?
+        for word in text.split():
+            if word in topWords:
+                overlap += topWords[word]
+        return overlap
+        
     # For unsupervised LDA we don't have a name (i.e label) for topics
     # We will try to assign a MeSH label to the topic based on top 10 words
+    # Lesk algorithm
     ### We return the top 5 words associated with the topic
     def getTopicName(self, topicId):
         output = []
 
-        topWords = self.model.show_topic(topicId, topn=10)
+        topWords = dict(self.model.show_topic(topicId, topn=10))
         
         pubmed = PubmedRetriever()
         query = ""
-        for word, prob in topWords:
+        for word in topWords.iterkeys():
             query += word + " OR "
         query = query[:-4]
         candidateLabels = pubmed.getDocumentsIf(query, 10, None, None, "mesh")
         
-        stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
-        prepro = PubmedPreprocesser(stemmer)
-        for label, text in candidateLabels.iteritems():
-            text = prepro.stemWords(
-                   prepro.removeStopWords(
-                   prepro.removePunctuation(
-                   prepro.removeCapitals(text))))
+        candidateLabels = [(label, self.__preprocess(text)) for (label, text) in candidateLabels]
         
-        return output
+        bestLabel = ""
+        bestOverlap = 0.0
+        for (label, text) in candidateLabels:
+            overlap = self.computeOverlap(label, text, topWords)
+            if overlap > bestOverlap:
+                bestOverlap = overlap
+                bestLabel = label
+                
+        return bestLabel.split()
         
     def getPerplexity(self):
         logging.info("Start getPerplexity")
@@ -200,4 +214,12 @@ class LDATopicModel(TopicModel):
         logging.info(end-start)
         
         return perplexity
+        
+    def __preprocess(self, line):
+        stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
+        prepro = PubmedPreprocesser(stemmer)
+        return prepro.stemWords(
+               prepro.removeStopWords(
+               prepro.removePunctuation(
+                      line.lower())))
         

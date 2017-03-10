@@ -20,14 +20,18 @@
 #    def __ne__(self, other):
 #        return not self.__eq__(other)
 
+from operator import itemgetter
+
 from sortedcontainers import SortedList
+from sortedcontainers import SortedListWithKey
 
 class TopicInformation(object):
     def __init__(self, uid, nameTokens, wordsProb):
         self.uid = uid
         self.nameTokens = nameTokens
         # Inverted index
-        self.docs = []
+        # self.docs = []
+        self.docs = SortedListWithKey(key=itemgetter(1))
         # The years when the documents stored in self.docs have been published
         # Keep duplicate values so we can create a histogram for temporal trends / topic
         self.years = SortedList()
@@ -41,5 +45,11 @@ class TopicInformation(object):
     # Convert to regular list
     def finaliseYears(self):
         self.years = [y for y in self.years]
+        
+    # No longer need for the SortedList
+    # Convert to regular list
+    # Sorted by this topic relevance in doc
+    def finaliseDocs(self):
+        self.docs = [d for (d, p) in reversed(self.docs)]
 
     
