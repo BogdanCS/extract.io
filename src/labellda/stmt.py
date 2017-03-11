@@ -410,7 +410,7 @@ class STMT(object):
                           
         sorted(output, key=lambda x: x[1], reverse=True)
         #globals.WORDS_PER_TOPIC
-        return output[:50]
+        return output[:100]
         
     def getLabelWordsMapping(self, label_index, words):
         y_words = []

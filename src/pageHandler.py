@@ -147,14 +147,16 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             #    print link.value
 
             print json.dumps({"topics" : topics,
-                              "links"  : links}, default=lambda o: o.__dict__)
+                              "links"  : links,
+                              "docs"   : globals.PROCESSED_CACHED_CORPUS}, default=lambda o: o.__dict__)
                             # "docs" : docs
             # topics is going to have a link to this docs which is going to contain
             # full text, all topics, snippets for each topic
             
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,
-                                                "links"  : links}, default=lambda o: o.__dict__))
+                                                "links"  : links,
+                                                "docs"   : globals.PROCESSED_CACHED_CORPUS}, default=lambda o: o.__dict__))
 
         except Exception, e:
             traceback.print_exc()

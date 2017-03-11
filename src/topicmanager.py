@@ -15,14 +15,11 @@ class TopicManager():
         # We keep the model as a global variables so we don't have to load it each time
         (topics, links) = self.__getTopicsBasicInfo(model, docs, linker)
         
-        # Drop the topic id keys as we don't need them anymore
         # Convert the binary tree container in which we store years
         # to a regular list so we can pass it to the UI
-        topic_list = [] 
         for v in topics.values():
             v.finaliseYears()
             v.finaliseDocs()
-            topic_list.append(v)
         
         # Convert link list dictionary to a simple list of LinkInformation
         # Drop weak links
@@ -33,7 +30,7 @@ class TopicManager():
                                                  target, 
                                                  linker.getFinalValue(values)))
         
-        return (topic_list, link_list)
+        return (topics, link_list)
         
     def __getTopicsBasicInfo(self, model, docs, linker):
         # key - topic id
@@ -42,8 +39,10 @@ class TopicManager():
         # key - (source,target) where source < target, 
         # value - (total link strenght, total links)
         links = {}
-        
+        docsIdx = {}
         for docId, docInfo in docs.iteritems():
+            print docId
+            
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.getTopicComposition(docInfo)
 

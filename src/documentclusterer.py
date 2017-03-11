@@ -27,10 +27,11 @@ class TopTopicClusterer:
         # Add document to its top 3 topics' doc list
         stopStep = min(3, len(topicComposition))
         for idx in range(0, stopStep):
-            # Append document to the corresponding cluster identified by topic id
-            # clusters[maxIdx].docs.append(globals.PUBMED_SEARCH_URL + str(docId))
-            clusters[topicComposition[idx][0]].docs.add((docInfo.uiText, topicComposition[idx][1]))
-            # Add its year of publishment - need to normalise
+            #1. Add topic to current document list
+            docInfo.topicList.append(topicComposition[idx][0])
+            #2. Append document to the corresponding cluster identified by topic id
+            clusters[topicComposition[idx][0]].docs.add((docId, topicComposition[idx][1]))
+            #3. Add its year of publishment - need to normalise
             clusters[topicComposition[idx][0]].years.add(docInfo.year)
         
     def __getMaxTopicIndex(self, topicComposition):

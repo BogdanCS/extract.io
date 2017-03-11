@@ -343,7 +343,9 @@
 	    });
 
 	  // Topics - nodes
-	  var nodes = response.topics;
+	  var nodes = Object.keys(response.topics).map(function(key){
+	      return response.topics[key];
+	  });
 	  var length = nodes.length;
 	  var maxNodeValue = nodes[0].score; 
 	  for (var idx = 0; idx < length; idx++)
@@ -427,7 +429,7 @@
 	  $('circle').click(function ()
 	  {
 	      var d = this.__data__;
-	      drawDocs(d.docs)
+	      drawDocs(d.docs, d.wordsProb, d.nameTokens)
 	      drawTemporalTrend(d.years)
 	      highlightAdjacent(d, 0.1) // argument is opacity
 	  })
@@ -451,18 +453,96 @@
 	      });
 	  }
 
-	  function createModal(buttonId, modalText)
+	  function createTopicTitle(tokens)
 	  {
-	      modal = "<div id=\"mod"+ buttonId +"\" class=\"modal\">" +
-		      "<div class=\"modal-content\">" +
-                      "<span class=\"close\" id=clo"+ buttonId +">&times;</span>" +
-                      "<p>" + modalText + "</p>" +
-                      "</div>"
-                      "</div>"
+	      var topicTitle = ""
+	      for (var jdx = 0; jdx < tokens.length; jdx++)
+	      {
+		  topicTitle += tokens[jdx] + " "
+	      }
+	      titleLength = topicTitle.length < 11 ? doc.title.length : 11 
+	      return topicTitle.slice(0,titleLength) + "..."
+	  }
+	    
+	  function createModal(pmid, doc)
+	  {
+	      var modal = "<div id=\"mod"+ pmid +"\" class=\"modal\">" +
+		          "<div class=\"modal-content\">" +
+                          "<span class=\"close\" id=clo"+ pmid +">&times;</span>" +
+                          "<p><b>" + doc.title + "</b></p>"
+	      
+	      // Assign each word (where possible) to a topic
+	      var wordTopicDict = {}
+	      var words = doc.uiText.split(" ")
+	      for (var idx = 0; idx < words.length; idx++)
+	      {
+		  wordTopicDict[words[idx].replace(/\W/g, '').toLowerCase()] = {topicId: "", 
+									        prob: 0.0}
+	      }
+ 
+	      modal += "<p>"
+	      for (var idx = 0; idx < doc.topicList.length; idx++)
+	      {
+		  var topicId = doc.topicList[idx]
+		  modal += "<a class=\"region\" id=\"top" + topicId + "\">"
+		  modal += createTopicTitle(response.topics[topicId].nameTokens) + "</a>"
+		  
+		  topId = "#top" + topicId
+		  console.log(topId)
+		  $("#docs").on({
+		      mouseenter: function(e) {
+			  $(this).attr("class", "current")
+			  $(".word").css({opacity: 0.0})
+			  var curCls = ".wtop" + (this.id).slice(3,(this.id).length)
+			  $(curCls).css({opacity: 1.0})
+			  // These are stop words or words not assigned to a particular topic
+			  $(".wtop").css({opacity: 0.3})
+		      },
+		      mouseleave: function(e) {
+			  $(this).attr("class", "region")
+			  $(".word").css({opacity: 1.0})
+		      }
+		  }, topId)
+		  
+		  // Check the topic words and match them with the words in doc text
+		  for (var jdx = 0; jdx < response.topics[topicId].wordsProb.length; jdx++)
+		  {
+		      word = response.topics[topicId].wordsProb[jdx][0]
+		      prob = response.topics[topicId].wordsProb[jdx][1]
+		      // Alternative here - add more classes instead of choosing just one
+		      // Considering reducing WORDS_PER_TOPIC and have more topics per DOC
+		      if ((word in wordTopicDict) &&
+			  response.topics[topicId].score * prob > wordTopicDict[word].prob)
+		      {
+			  wordTopicDict[word].topicId = topicId
+			  wordTopicDict[word].prob = response.topics[topicId].score * prob
+		      }
+		  }
+	      }
+
+	      modal += "</p><p>"
+
+	      for (var idx = 0; idx < words.length; idx++)
+	      {
+		  modal += "<span class=\"word wtop"
+		  
+		  key = words[idx].replace(/\W/g, '').toLowerCase()
+		  if (key in wordTopicDict)
+		  {
+		      modal += wordTopicDict[key].topicId
+		  }
+		  
+		  modal += "\">" + words[idx] + " " + "</span>"
+	      }
+	      
+              modal += "</p>" +
+	               "</div>" +
+                       "</div>"
+
 	      return modal
 	  }
 
-	  function drawDocs(docs)
+	  function drawDocs(docs, topicWords, topicNameTokens)
 	  {
 	     // Clear docs area
 	     var area = _("docs")
@@ -470,18 +550,19 @@
 
 	     listLength = docs.length;
 	     for (var idx = 0; idx < listLength && idx < 5; idx++){
-		     lines = docs[idx].split("<br>")
-		     pmid = (lines[0].split(':'))[1]
-		     console.log(pmid)
-		     titleLength = lines[1].length < 21 ? lines[1].length : 21 
-		     title = lines[1].slice(0,titleLength) + "..."
-		     area.innerHTML += "<button id=\"but"+pmid+"\">"+title+"</button>"
-		     area.innerHTML += createModal(pmid, docs[idx])
+		     pmid = docs[idx]
+		     doc = response.docs[pmid]
+		     //lines = doc.split("<br>")
+		     //pmid = (lines[0].split(':'))[1]
+		     //console.log(pmid)
+		     titleLength = doc.title.length < 21 ? doc.title.length : 21 
+		     title = doc.title.slice(0,titleLength) + "..."
+		     area.innerHTML += "<button class=\"region\" id=\"but"+pmid+"\">"+title+"</button>"
+		     area.innerHTML += createModal(pmid, doc)
 		 
 		     var btnid = "#but" + pmid
 		     $("#docs").on("click", btnid, function(e) {
 			 id = "mod" + (this.id).slice(3,(this.id).length)
-			 console.log(id)
 			 document.getElementById(id).style.display = "block";
 		     })
 		     
@@ -641,6 +722,14 @@
             .style("opacity", 1e-6)
             .remove()
 
+	  // Clear docs area
+	  var area = _("docs")
+	  area.innerHTML = null;
+
+	  var area = _("tempHist");
+	  // Clear draw area.
+	  area.innerHTML = null;
+	    
 	  getTopics();
         }
       }
