@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod   
 from operator import itemgetter
+import math
 
 import globals
 #class DocumentClusterer:
@@ -12,7 +13,17 @@ import globals
 
 class TopTopicClusterer:
 
-    def getDocClusters(self, docId, docInfo, model, clusters):
+    def __init__(self):
+        # For each year keep a count of how many documents we have in the corpus
+        self.docsPerYear = {}
+
+    def __incrementCount(self, key, dct):
+        if(key in dct):
+           dct[key] = dct[key] + 1
+        else:
+           dct[key] = 1
+        
+    def updateDocClusters(self, docId, docInfo, model, clusters):
         #for docId, docInfo in docs.iteritems():
         topicComposition = model.getTopicComposition(docInfo)
         if len(topicComposition) == 0:
@@ -31,9 +42,18 @@ class TopTopicClusterer:
             docInfo.topicList.append(topicComposition[idx][0])
             #2. Append document to the corresponding cluster identified by topic id
             clusters[topicComposition[idx][0]].docs.add((docId, topicComposition[idx][1]))
-            #3. Add its year of publishment - need to normalise
-            clusters[topicComposition[idx][0]].years.add(docInfo.year)
+            #3. Add its year of publishment
+            self.__incrementCount(docInfo.year, clusters[topicComposition[idx][0]].years)
+            self.__incrementCount(docInfo.year, self.docsPerYear)
+            #clusters[topicComposition[idx][0]].years.add(docInfo.year)
         
+    # Turn absolute number of document to percetange of documents out of all the documents
+    # published in that year from the corpus
+    def normaliseCounts(self, clusters):
+        for cluster in clusters.itervalues():
+            for year, count in cluster.years.iteritems():
+                cluster.years[year] = int(math.floor(100 * count / self.docsPerYear[year])) 
+            
     def __getMaxTopicIndex(self, topicComposition):
         return max(topicComposition, key=itemgetter(1))[0]
             

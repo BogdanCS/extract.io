@@ -15,9 +15,13 @@ class TopicManager():
         # We keep the model as a global variables so we don't have to load it each time
         (topics, links) = self.__getTopicsBasicInfo(model, docs, linker)
         
-        # Convert the binary tree container in which we store years
+        # Convert the dictionaries in which we store years counts and docs ids
         # to a regular list so we can pass it to the UI
-        for v in topics.values():
+        # Also get forecast for subsequent years
+        forecaster = TSForecaster()
+        for v in topics.itervalues():
+            forecaster.getForecast(topic)
+
             v.finaliseYears()
             v.finaliseDocs()
         
@@ -39,7 +43,7 @@ class TopicManager():
         # key - (source,target) where source < target, 
         # value - (total link strenght, total links)
         links = {}
-        docsIdx = {}
+        clusterer = TopTopicClusterer()
         for docId, docInfo in docs.iteritems():
             print docId
             
@@ -56,6 +60,8 @@ class TopicManager():
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
                 
-            TopTopicClusterer().getDocClusters(docId, docInfo, model, topics)
+            clusterer.updateDocClusters(docId, docInfo, model, topics)
                 
+        # Normalise counts based on the total number of documents for each attribute(e.g year)
+        clusterer.normaliseCounts(topics)
         return (topics, links)
