@@ -14,7 +14,8 @@ PUBMED_ABSTRACT_FIELD_NAME = "AbstractText"
 PUBMED_ID_FIELD_NAME = "PMID"
 PUBMED_TITLE_FIELD_NAME = "ArticleTitle"
 PUBMED_LABELS_FIELD_NAME = "MeshHeadingList"
-PUBMED_PUBLISH_YEAR_FIELD_NAME = "Year" # Keep in mind this is not necessarily publish year, might be revise year, completion year. however this shouldn't affect us
+PUBMED_PUBLISH_YEAR_FIELD_NAME = "Year" 
+PUBMED_PUBLISH_MONTH_FIELD_NAME = "Year" 
 
 TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
 CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"

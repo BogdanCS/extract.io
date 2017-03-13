@@ -35,7 +35,7 @@ class TopicInformation(object):
         # The years when the documents stored in self.docs have been published
         # Keep duplicate values so we can create a histogram for temporal trends / topic
         self.years = {}
-        self.forecastYears = [] # sorted?
+        self.forecastYears = {}
         self.score = 0
         
         # Words associated with topic and their probability
@@ -45,12 +45,17 @@ class TopicInformation(object):
     # No longer need for the SortedList
     # Convert to regular list
     def finaliseYears(self):
+        self.years = self.__finaliseYears(self.years)
+        self.forecastYears = self.__finaliseYears(self.forecastYears)
+        
+    def __finaliseYears(self, years):
         expandedYears = []
-        for year, count in self.years.iteritems():
+        for yearMonth, count in years.iteritems():
+            year = yearMonth.split('-')[0]
             for i in range(0, count):
                 expandedYears.append(year)
         expandedYears.sort()
-        self.years = expandedYears
+        return expandedYears
         
     # No longer need for the SortedList
     # Convert to regular list

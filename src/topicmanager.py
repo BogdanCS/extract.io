@@ -5,6 +5,7 @@ from documentclusterer import TopTopicClusterer
 from topicinformation import TopicInformation
 from linkinformation import LinkInformation
 from topiclinker import SimpleTopicLinker
+from tsforecaster import TSForecaster
 
 class TopicManager():
 

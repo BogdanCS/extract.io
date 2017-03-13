@@ -1,17 +1,24 @@
 import pandas as pd
+import math
 import numpy as np
+from dateutil import relativedelta as rd
+from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.stattools import adfuller
-import matplotlib.pylab as plt
-from matplotlib.pylab import rcParams
-rcParams['figure.figsize'] = 15, 6
-from matplotlib import pyplot
+#import matplotlib.pylab as plt
+#from matplotlib.pylab import rcParams
+#rcParams['figure.figsize'] = 15, 6
+#from matplotlib import pyplot
 
 # We may need a bigger range of the data - or more granular - consider months?
 # Store months and use it for forecasting but remove them before sending to UI? (i.e when expanding)
 
 class TSForecaster(object):
     FUTURE_TIME_WINDOW = 5 # years
+    FIND_BEST_PARAMS = False
+    DEFAULT_P = 0
+    DEFAULT_D = 1
+    DEFAULT_Q = 2
 
     # Maybe use this for evaluation?
     # copied from analytics vidhya
@@ -52,26 +59,70 @@ class TSForecaster(object):
         df.sort_index(axis=0, inplace=True)
         return df
 
+    def getArimaForecast(self, history, p, d, q):
+        model = ARIMA(history, order=(p,d,q))
+        model_fit = model.fit(disp=-1)
+        output = model_fit.forecast()
+        return output[0]
+
     def getForecast(self, topic):
         # Create time series dataframe
         df = self.createDataframe(self.convertToPD(topic.years))
         ts = df['docs']
-      # tsLog = np.log(ts)
-      # http://machinelearningmastery.com/arima-for-time-series-forecasting-with-python/
-      # do the testing training to find the best p,q,d parameters for the model
-        history = [val for val in ts.values]
-        predictions = list()
-        for t in range(0,10):
-            model = ARIMA(history, order=(3,1,0))
-            model_fit = model.fit(disp=-1)
-            output = model_fit.forecast()
-            print output[0]
-            yhat = output[0]
-            predictions.append(yhat)
-            history.append(yhat)
-        pyplot.plot(predictions)
-        pyplot.show(block=False)
         
+        # Fill missing data by linear interpolation
+        ts = ts.reindex(pd.date_range(min(df.index), max(df.index), freq='MS'))
+        ts = ts.interpolate()
+                   
+      # tsLog = np.log(ts)
+        history = []
+        bestp = TSForecaster.DEFAULT_P
+        bestd = TSForecaster.DEFAULT_D
+        bestq = TSForecaster.DEFAULT_Q
+        # Find best parameters for model
+        if (TSForecaster.FIND_BEST_PARAMS == True):
+            # Split time series into training and evaluation set
+            X = ts.values
+            size = int(len(X) * 0.66)
+            train, evl = X[0:size], X[size:len(X)]
+            history = [val for val in train]
+            predictions = list()
+            min_error = 1000000
+            for p in range(0,1):
+                for d in range(1,2):
+                    for q in range(2,3):
+                        try:
+                            for t in range(len(evl)):
+                                forecast = self.getArimaForecast(history, p, d, q)
+                                observ = evl[t] 
+                                predictions.append(forecast)
+                                history.append(observ)
+                            error = mean_squared_error(evl, predictions)
+                            print('Test MSE: %.3f' % error)
+                            if (error < min_error):
+                                min_error = error
+                                bestp = p
+                                bestq = q
+                                bestd = d
+                                #pyplot.plot(predictions)
+                                #pyplot.plot(evl)
+                                #pyplot.show(block=False)
+                        except:
+                            print "Continue"
+                                
+        else:
+            history = [val for val in ts.values]
+
+            
+        print "ARIMA parameters: %d, %d, %d" % (bestp, bestd, bestq)
+        # Make predictions
+        baseDate = max(df.index)
+        for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
+            forecast = self.getArimaForecast(history, bestp, bestd ,bestq)
+            date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
+            topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
+            history.append(forecast)
+
       #  # Remove trends/seasonality
       #  tsLog = np.log(ts)
       #  #tsLog = ts
@@ -108,8 +159,3 @@ class TSForecaster(object):
       #  plt.plot(predictions_ARIMA)
       #  plt.show(block=False)
       #  plt.title('RMSE: %.4f'% np.sqrt(sum((predictions_ARIMA-ts)**2)/len(ts)))
-        
-        topic.forecastYears = []
-
-        while(True):
-            x=1
