@@ -19,9 +19,8 @@ class TopicManager():
         # Convert the dictionaries in which we store years counts and docs ids
         # to a regular list so we can pass it to the UI
         # Also get forecast for subsequent years
-        forecaster = TSForecaster()
         for v in topics.itervalues():
-            forecaster.getForecast(topic)
+            TSForecaster().getForecast(v)
 
             v.finaliseYears()
             v.finaliseDocs()

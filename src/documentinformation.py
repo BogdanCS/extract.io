@@ -1,5 +1,6 @@
 from malletconverter import MalletConverter
 import globals
+import calendar
 
 class DocumentInformation(object):
     def __init__(self, paper, prepro, index):
@@ -10,7 +11,14 @@ class DocumentInformation(object):
         self.topicList = []
 
         dateStr = MalletConverter.getField(globals.PUBMED_PUBLISH_YEAR_FIELD_NAME, paper)
-        dateStr += "-" + MalletConverter.getField(globals.PUBMED_PUBLISH_MONTH_FIELD_NAME, paper)
+        month =  MalletConverter.getField(globals.PUBMED_PUBLISH_MONTH_FIELD_NAME, paper)
+        if len(month) == 1:
+            month = '0' + month
+        if not month.isdigit():
+            month = list(calendar.month_abbr).index(month_abbr)
+
+        dateStr += "-" + month
+        print dateStr
         # Named year for "legacy" reasons
         self.year   = dateStr 
         self.labels = MalletConverter.getLabels(globals.PUBMED_LABELS_FIELD_NAME, paper)

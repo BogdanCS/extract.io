@@ -51,6 +51,7 @@ class TopTopicClusterer:
     # published in that year from the corpus
     def normaliseCounts(self, clusters):
         for cluster in clusters.itervalues():
+            print cluster.years
             for yearMonth, count in cluster.years.iteritems():
                 cluster.years[yearMonth] = int(math.floor(100 * count / self.docsPerYear[yearMonth.split('-')[0]])) 
             

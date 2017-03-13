@@ -15,10 +15,10 @@ from statsmodels.tsa.stattools import adfuller
 
 class TSForecaster(object):
     FUTURE_TIME_WINDOW = 5 # years
-    FIND_BEST_PARAMS = False
+    FIND_BEST_PARAMS = True
     DEFAULT_P = 0
-    DEFAULT_D = 1
-    DEFAULT_Q = 2
+    DEFAULT_D = 0
+    DEFAULT_Q = 0
 
     # Maybe use this for evaluation?
     # copied from analytics vidhya
@@ -52,6 +52,7 @@ class TSForecaster(object):
         return pd
         
     def createDataframe(self, data):
+        print data
         df = pd.DataFrame(data, columns = ['date', 'docs'])
         df['date'] = pd.to_datetime(df['date'])
         df.index = df['date']
@@ -71,8 +72,10 @@ class TSForecaster(object):
         ts = df['docs']
         
         # Fill missing data by linear interpolation
+        print ts
         ts = ts.reindex(pd.date_range(min(df.index), max(df.index), freq='MS'))
         ts = ts.interpolate()
+        print ts
                    
       # tsLog = np.log(ts)
         history = []
@@ -88,9 +91,9 @@ class TSForecaster(object):
             history = [val for val in train]
             predictions = list()
             min_error = 1000000
-            for p in range(0,1):
-                for d in range(1,2):
-                    for q in range(2,3):
+            for p in range(0,2):
+                for d in range(1,3):
+                    for q in range(2,4):
                         try:
                             for t in range(len(evl)):
                                 forecast = self.getArimaForecast(history, p, d, q)
@@ -117,11 +120,20 @@ class TSForecaster(object):
         print "ARIMA parameters: %d, %d, %d" % (bestp, bestd, bestq)
         # Make predictions
         baseDate = max(df.index)
-        for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
-            forecast = self.getArimaForecast(history, bestp, bestd ,bestq)
-            date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
-            topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
-            history.append(forecast)
+        # try catch try again with 0 0 0
+        try:
+            for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
+                forecast = self.getArimaForecast(history, bestp, bestd ,bestq)
+                date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
+                topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
+                history.append(forecast)
+        except:
+            for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
+                forecast = self.getArimaForecast(history, 0, 0 ,0)
+                date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
+                topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
+                history.append(forecast)
+            
 
       #  # Remove trends/seasonality
       #  tsLog = np.log(ts)

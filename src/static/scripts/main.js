@@ -1,6 +1,6 @@
 (function() {
 
-  var LIMIT = 50;
+  var LIMIT = 250;
 
   var keyword = "diabetes",
       model = "LDA",
@@ -430,7 +430,8 @@
 	  {
 	      var d = this.__data__;
 	      drawDocs(d.docs, d.wordsProb, d.nameTokens)
-	      drawTemporalTrend(d.years)
+	      drawTemporalTrend(d.years, "tempHist")
+	      drawTemporalTrend(d.forecastYears, "forTempHist")
 	      highlightAdjacent(d, 0.1) // argument is opacity
 	  })
 	    
@@ -488,7 +489,6 @@
 		  modal += createTopicTitle(response.topics[topicId].nameTokens) + "</a>"
 		  
 		  topId = "#top" + topicId
-		  console.log(topId)
 		  $("#docs").on({
 		      mouseenter: function(e) {
 			  $(this).attr("class", "current")
@@ -578,31 +578,40 @@
 	     $('#docs').prepend("<span>" + "Documents about the topic"  + "</span>");
 	  }
 
-	  function drawTemporalTrend(years)
+	  function drawTemporalTrend(years, areaId)
 	  {
 	      // Should either use integers or pass the whole date
 	      var data = new Array();
+	      var startDate = new Date(2050,1,1)
+	      var endDate = new Date(1960,1,1)
 	      for (var idx = 0; idx < years.length; idx++)
 	      {
-		  data.push(new Date(years[idx], 1, 1))
+		  //tokens = years[idx].split('-')
+		  //date = new Date(tokens[0], tokens[1], 1)
+		  date = new Date(years[idx],1,1)
+		  if(date < startDate)
+		      startDate = date
+		  if(date > endDate)
+		      endDate = date
+		  data.push(date)
 	      }
 
-	      var area = _("tempHist");
+	      var area = _(areaId);
 	      // Clear draw area.
 	      area.innerHTML = null;
 
 	      // Create initial svg
-              svg = d3.select("#tempHist").append("svg")
+              svg = d3.select("#" + areaId).append("svg")
 		  .attr("width", area.offsetWidth*2)
 		  .attr("height",area.offsetHeight/3);
 	      
-	      var margin = {top: 10, right: 30, bottom: 30, left: 30};
+	      var margin = {top: 10, right: 30, bottom: 30, left: 40};
 	      var width  = svg.attr("width") - margin.left - margin.right;
 	      var height = svg.attr("height") - margin.top - margin.bottom;
 	      var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 	      var x = d3.scaleTime()
-	        .domain([new Date(2006, 1, 1), new Date(2017, 1, 1)]) //to update to start date, end date
+	        .domain([startDate, endDate]) 
 		.rangeRound([0, width]);
 
 	      var bins = d3.histogram()
@@ -610,8 +619,9 @@
 		.thresholds(x.ticks(d3.timeYear))
 		(data);
 
+	      var max = d3.max(bins, function(d) { return d.length; })
 	      var y = d3.scaleLinear()
-		.domain([0, d3.max(bins, function(d) { return d.length; })])
+		.domain([0, max])
 		.range([height, 0]);
 
 	      var bar = g.selectAll(".bar")
@@ -636,7 +646,12 @@
 		      .call(d3.axisLeft(y));
 	      }
 
-	      $('#tempHist').prepend("<span>" + "Temporal trend for the topic"  + "</span>");
+	      title = ""
+	      if (areaId == "tempHist")
+		  title = "Temporal trend for topic"
+	      else
+		  title = "Forecast for topic"
+	      $('#' + areaId).prepend("<span>" + title  + "</span>");
 	  }
 
 
@@ -727,6 +742,9 @@
 	  area.innerHTML = null;
 
 	  var area = _("tempHist");
+	  // Clear draw area.
+	  area.innerHTML = null;
+	  var area = _("forTempHist");
 	  // Clear draw area.
 	  area.innerHTML = null;
 	    
