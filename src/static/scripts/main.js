@@ -1,9 +1,9 @@
 (function() {
 
-  var LIMIT = 250;
+  var LIMIT = 10;
 
   var keyword = "diabetes",
-      model = "LDA",
+      model = "LLDA",
       response;
 
   var startDatepickerState = 0,
@@ -35,7 +35,7 @@
 	removeTopics();
       }
     });
-    $("#startdatepicker").datepicker("setDate", "01/01/2012");
+    $("#startdatepicker").datepicker("setDate", "01/01/2001");
     $("#enddatepicker").datepicker("setDate", "01/01/2016");
     $('#startDatepickerBtn').addClass('active');
     $('#endDatepickerBtn').addClass('active');
@@ -430,8 +430,24 @@
 	  {
 	      var d = this.__data__;
 	      drawDocs(d.docs, d.wordsProb, d.nameTokens)
-	      drawTemporalTrend(d.years, "tempHist")
-	      drawTemporalTrend(d.forecastYears, "forTempHist")
+	      if(d.years.length > 0)
+		  drawTemporalTrend(d.years, d.maxYearCount, "tempHist")
+	      else
+	      {
+		  var area = _('tempHist');
+		  // Clear draw area.
+		  area.innerHTML = null;
+		  $('#tempHist').prepend("<span>Not enough data</span>");
+	      }
+	      if(d.forecastYears.length > 0)
+		  drawTemporalTrend(d.forecastYears, d.maxYearCount, "forTempHist")
+	      else
+	      {
+		  var area = _('forTempHist');
+		  // Clear draw area.
+		  area.innerHTML = null;
+		  $('#forTempHist').prepend("<span>Not enough data to forecast</span>");
+	      }
 	      highlightAdjacent(d, 0.1) // argument is opacity
 	  })
 	    
@@ -578,7 +594,7 @@
 	     $('#docs').prepend("<span>" + "Documents about the topic"  + "</span>");
 	  }
 
-	  function drawTemporalTrend(years, areaId)
+	  function drawTemporalTrend(years, maxCount, areaId)
 	  {
 	      // Should either use integers or pass the whole date
 	      var data = new Array();
@@ -610,6 +626,8 @@
 	      var height = svg.attr("height") - margin.top - margin.bottom;
 	      var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+	      minEndDate = new Date(startDate.getFullYear() + 5, 1, 1)
+	      endDate = minEndDate.getTime() < endDate.getTime() ? endDate : minEndDate
 	      var x = d3.scaleTime()
 	        .domain([startDate, endDate]) 
 		.rangeRound([0, width]);
@@ -619,9 +637,9 @@
 		.thresholds(x.ticks(d3.timeYear))
 		(data);
 
-	      var max = d3.max(bins, function(d) { return d.length; })
+	      //var max = d3.max(bins, function(d) { return d.length; })
 	      var y = d3.scaleLinear()
-		.domain([0, max])
+		.domain([0, maxCount])
 		.range([height, 0]);
 
 	      var bar = g.selectAll(".bar")
@@ -649,8 +667,6 @@
 	      title = ""
 	      if (areaId == "tempHist")
 		  title = "Temporal trend for topic"
-	      else
-		  title = "Forecast for topic"
 	      $('#' + areaId).prepend("<span>" + title  + "</span>");
 	  }
 

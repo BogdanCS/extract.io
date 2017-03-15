@@ -65,8 +65,9 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             #ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
             #lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
 
-            print json.dumps({"topics" : topics,
-                              "links"  : links}, default=lambda o: o.__dict__)
+            # Dump this to file and retrieve it (i.e cache)
+            #print json.dumps({"topics" : topics,
+            #                  "links"  : links}, default=lambda o: o.__dict__)
             
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,
@@ -118,7 +119,17 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                     'endDate': self.request.get('end_date'),
                     'limit': self.request.get('limit'),
                     'model': self.request.get('model')}
+            startDate = ''.join(c for c in req['startDate'] if c.isdigit())
+            endDate = ''.join(c for c in req['endDate'] if c.isdigit())
+            filename = req['keywords'] + "_" + startDate + "_" + endDate + "_" + req['limit'] + "_" + req['model']
 
+            if (os.path.isfile(globals.CACHE_PATH + filename)):
+                with open(globals.CACHE_PATH + filename, 'r') as infile:
+                    data = json.load(infile)
+                # Set json response
+                self.response.out.write(json.dumps(data, default=lambda o: o.__dict__))
+                return
+                
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
             
@@ -134,24 +145,13 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
 
             print model.getPerplexity()
 
-            #for extracted in topics:
-            #    #for word in extracted.nameTokens:
-            #    #    print word,
-            #    #print
-            #    for doc in extracted.docs:
-            #        print doc
-            #    #print extracted.score
-            #for link in links:
-            #    print link.source,
-            #    print link.target,
-            #    print link.value
-
-            print json.dumps({"topics" : topics,
-                              "links"  : links,
-                              "docs"   : globals.PROCESSED_CACHED_CORPUS}, default=lambda o: o.__dict__)
-                            # "docs" : docs
-            # topics is going to have a link to this docs which is going to contain
-            # full text, all topics, snippets for each topic
+            with open(globals.CACHE_PATH + filename, 'w') as outfile:
+                json.dump({"topics" : topics,
+                            "links"  : links,
+                            "docs"   : globals.PROCESSED_CACHED_CORPUS}, 
+                          outfile,
+                          default=lambda o: o.__dict__
+                          )
             
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,

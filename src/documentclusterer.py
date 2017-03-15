@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod   
 from operator import itemgetter
 import math
+import logging
 
 import globals
 #class DocumentClusterer:
@@ -36,7 +37,7 @@ class TopTopicClusterer:
         topicComposition = self.__sortTopicComposition(topicComposition)
 
         # Add document to its top 3 topics' doc list
-        stopStep = min(3, len(topicComposition))
+        stopStep = min(4, len(topicComposition))
         for idx in range(0, stopStep):
             #1. Add topic to current document list
             docInfo.topicList.append(topicComposition[idx][0])
@@ -51,7 +52,6 @@ class TopTopicClusterer:
     # published in that year from the corpus
     def normaliseCounts(self, clusters):
         for cluster in clusters.itervalues():
-            print cluster.years
             for yearMonth, count in cluster.years.iteritems():
                 cluster.years[yearMonth] = int(math.floor(100 * count / self.docsPerYear[yearMonth.split('-')[0]])) 
             

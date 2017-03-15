@@ -17,9 +17,9 @@ PUBMED_LABELS_FIELD_NAME = "MeshHeadingList"
 PUBMED_PUBLISH_YEAR_FIELD_NAME = "Year" 
 PUBMED_PUBLISH_MONTH_FIELD_NAME = "Month" 
 
+CACHE_PATH = os.path.dirname(__file__) + "/static/cache/"
 TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
 CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
-CORPUS_LABELS_PATH = os.path.dirname(__file__) + "/static/labels/pubmed.labels"
 LLDA_MODEL_NAME = "labellda_model"
 
 # These are only initialised once so we don't load them every
@@ -34,4 +34,4 @@ WORDS_PER_TOPIC = 100
 PROCESSED_CACHED_CORPUS = {}
 
 # Need to normalise
-TOPIC_PROB_THRESHOLD = 0.05
+TOPIC_PROB_THRESHOLD = 0.01

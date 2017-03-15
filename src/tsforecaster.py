@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 import math
 import numpy as np
 from dateutil import relativedelta as rd
@@ -15,44 +16,21 @@ from statsmodels.tsa.stattools import adfuller
 
 class TSForecaster(object):
     FUTURE_TIME_WINDOW = 5 # years
-    FIND_BEST_PARAMS = True
-    DEFAULT_P = 0
-    DEFAULT_D = 0
+    FIND_BEST_PARAMS = False
+    DEFAULT_P = 3
+    DEFAULT_D = 1
     DEFAULT_Q = 0
-
-    # Maybe use this for evaluation?
-    # copied from analytics vidhya
-    def testStationarity(self, timeseries):
-        #Determing rolling statistics
-        rolmean = pd.rolling_mean(timeseries, window=3)
-        rolstd = pd.rolling_std(timeseries, window=3)
-
-        #Plot rolling statistics:
-        #orig = plt.plot(timeseries, color='blue',label='Original')
-        #mean = plt.plot(rolmean, color='red', label='Rolling Mean')
-        #std = plt.plot(rolstd, color='black', label = 'Rolling Std')
-        #plt.legend(loc='best')
-        #plt.title('Rolling Mean & Standard Deviation')
-        #plt.show(block=False)
-        
-        #Perform Dickey-Fuller test:
-        print 'Results of Dickey-Fuller Test:'
-        dftest = adfuller(timeseries, autolag='AIC')
-        dfoutput = pd.Series(dftest[0:4], index=['Test Statistic','p-value','#Lags Used','Number of Observations Used'])
-        for key,value in dftest[4].items():
-            dfoutput['Critical Value (%s)'%key] = value
-        print dfoutput
 
     def convertToPD(self, yearCounts):
         pd = {'date' : [],
               'docs' : []}
         for year, count in yearCounts.iteritems():
+            #pd['date'].append(year + '-01-01')
             pd['date'].append(year + '-01')
             pd['docs'].append(count)
         return pd
         
     def createDataframe(self, data):
-        print data
         df = pd.DataFrame(data, columns = ['date', 'docs'])
         df['date'] = pd.to_datetime(df['date'])
         df.index = df['date']
@@ -63,21 +41,26 @@ class TSForecaster(object):
     def getArimaForecast(self, history, p, d, q):
         model = ARIMA(history, order=(p,d,q))
         model_fit = model.fit(disp=-1)
-        output = model_fit.forecast()
+        output = model_fit.forecast(steps=12)
+        #print output
+        #print output[0]
         return output[0]
 
     def getForecast(self, topic):
+        print topic.years
+        if (len(topic.years) < 5):
+            logging.warn("Not enough data to estimate")
+            return
+
         # Create time series dataframe
         df = self.createDataframe(self.convertToPD(topic.years))
         ts = df['docs']
         
-        # Fill missing data by linear interpolation
-        print ts
         ts = ts.reindex(pd.date_range(min(df.index), max(df.index), freq='MS'))
         ts = ts.interpolate()
-        print ts
-                   
-      # tsLog = np.log(ts)
+        #ts = ts.fillna(value=0)
+        # add a sparsity coefficient
+
         history = []
         bestp = TSForecaster.DEFAULT_P
         bestd = TSForecaster.DEFAULT_D
@@ -91,17 +74,20 @@ class TSForecaster(object):
             history = [val for val in train]
             predictions = list()
             min_error = 1000000
-            for p in range(0,2):
-                for d in range(1,3):
-                    for q in range(2,4):
+            # try log?
+            # try years?
+            for p in range(0,4):
+                for d in range(0,3):
+                    for q in range(0,4):
                         try:
                             for t in range(len(evl)):
                                 forecast = self.getArimaForecast(history, p, d, q)
                                 observ = evl[t] 
                                 predictions.append(forecast)
                                 history.append(observ)
+                            print "%d %d %d" (p,d,q)
+                            print predictions
                             error = mean_squared_error(evl, predictions)
-                            print('Test MSE: %.3f' % error)
                             if (error < min_error):
                                 min_error = error
                                 bestp = p
@@ -120,21 +106,27 @@ class TSForecaster(object):
         print "ARIMA parameters: %d, %d, %d" % (bestp, bestd, bestq)
         # Make predictions
         baseDate = max(df.index)
-        # try catch try again with 0 0 0
         try:
-            for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
+            for t in range(0, self.FUTURE_TIME_WINDOW):
                 forecast = self.getArimaForecast(history, bestp, bestd ,bestq)
-                date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
-                topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
-                history.append(forecast)
+                date = baseDate + rd.relativedelta(years=int(math.floor(t)))
+            #topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
+                topic.forecastYears[str(date.year)] = int(math.floor(sum(forecast)))
+                history.extend(forecast)
         except:
-            for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
-                forecast = self.getArimaForecast(history, 0, 0 ,0)
-                date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
-                topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
-                history.append(forecast)
+            print "pl"
+       # except:
+       #     print "fallback"
+       #     for t in range(0, TSForecaster.FUTURE_TIME_WINDOW*12):
+       #         forecast = self.getArimaForecast(history, 0, 0 ,0)
+       #         date = baseDate + rd.relativedelta(years=int(math.floor(t/12)), months=t%12)
+       #         topic.forecastYears[str(date.year) + "-" + str(date.month)] = int(math.floor(forecast))
+       #         #topic.forecastYears[str(date.year)] = int(math.floor(forecast))
+       #         history.append(forecast)
+                
+        print topic.forecastYears
+        
             
-
       #  # Remove trends/seasonality
       #  tsLog = np.log(ts)
       #  #tsLog = ts

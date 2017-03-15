@@ -43,6 +43,8 @@ class LLDATopicModel(TopicModel):
 
         self.results = None
         self.trueLabels = None
+        # Document blacklist
+        self.blacklist = None
         # Mapping between label name and words associated with label
         # The indices correspond with the columns in results and trueLabels
         self.words = None
@@ -60,8 +62,6 @@ class LLDATopicModel(TopicModel):
         # labels dictionary where key is PMID and value is a string of space
         # separated labels
         (train_space, train_labels) = self.__unpackMallet(malletCorpus, labels)
-        print train_space
-        print train_labels
 
         stmt = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
         stmt.train(train_space, train_labels)
@@ -77,7 +77,7 @@ class LLDATopicModel(TopicModel):
         (test_space, test_labels) = self.__unpackDocInfo(dataset)
         self.model.test(test_space, test_labels)
         
-        (self.trueLabels, self.results, self.words) = self.model.results(test_labels, array=True)
+        (self.trueLabels, self.results, self.words, self.blacklist) = self.model.results(test_labels, array=True)
 
     def getTopicComposition(self, docInfo):
         output = []
@@ -85,6 +85,10 @@ class LLDATopicModel(TopicModel):
         if self.results is None:
             raise Exception("No test set has been provided")
             
+        if (docInfo.index in self.blacklist):
+            logging.warn("Ignore blacklisted document")
+            return output
+
         docResults = self.results[docInfo.index]
         # Convert to list of tuples
         for index, prob in enumerate(docResults):
@@ -98,9 +102,10 @@ class LLDATopicModel(TopicModel):
     def __unpackDocInfo(self, dataset):
         train_space = []
         train_labels = []
-        for docUID, docInfo in dataset.iteritems():
+        for docUID, docInfo in sorted(dataset.iteritems(), key=lambda (k,v): v.index):
             train_space.append(docInfo.text)
             train_labels.append(docInfo.labels)
+        train_space
         return (tuple(train_space), tuple(train_labels))
             
     def __unpackMallet(self, malletCorpus, labels):
@@ -149,7 +154,7 @@ class LDATopicModel(TopicModel):
         logging.info("Train unsupervised LDA")
         corpus = gensim.corpora.MalletCorpus(globals.CORPUS_PATH)
         _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
-        self.model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=8, num_topics=75, iterations=500)
+        self.model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=7, num_topics=75, iterations=300)
         self.model.save(globals.TRAINED_MODEL_PATH)
         
         # Update cache

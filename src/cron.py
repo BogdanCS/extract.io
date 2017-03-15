@@ -22,7 +22,7 @@ class Cron(webapp2.RequestHandler):
         logging.info("Cron starting..")
         pubmed = PubmedRetriever()
         #todo update
-        NO_DOCS = 15
+        NO_DOCS = 10000
         papers = pubmed.getDocumentsIf("diabetes", NO_DOCS, "2006", "2016")
 
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
@@ -38,9 +38,6 @@ class Cron(webapp2.RequestHandler):
         logging.info("Start writing to file")
         with io.FileIO(globals.CORPUS_PATH, "w") as file:
             file.write(malletCorpus.encode('utf8'))
-        with io.FileIO(globals.CORPUS_LABELS_PATH, "w") as file:
-            file.write(json.dumps(labels))
-
         logging.info("Stop writing to file")
         
         # Train Labelled LDA model

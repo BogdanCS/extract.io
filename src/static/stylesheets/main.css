@@ -84,10 +84,17 @@ h1 a:visited {
   color: #888;
 }
 .tempHist {
-  height: 25%;
+  height: 40%;
   text-align: right;
   color: #888;
   padding: 30px 10px;
+}
+
+.forTempHist {
+  height: 40%;
+  text-align: right;
+  color: #888;
+  padding: 0px 10px;
 }
 
 .bar rect {

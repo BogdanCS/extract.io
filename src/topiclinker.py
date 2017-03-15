@@ -7,8 +7,6 @@ from linkinformation import LinkInformation
 class SimpleTopicLinker:
     
     def getLinks(self, topicComposition, links):
-        logging.info("Start getting links")
-        start = time.time()
         # key - (source,target) where source < target, 
         # value - (total link strenght, total links)
         for idx, (topicId1, prob1) in enumerate(topicComposition[:-1], start=1):
@@ -21,9 +19,6 @@ class SimpleTopicLinker:
                 else:
                     links[(source,target)] = (links[(source,target)][0] + min([prob1, prob2]),
                                               links[(source,target)][1] + 1) 
-        end = time.time()
-        logging.info("Stop getting links. Time(sec): ")
-        logging.info(end-start)
     
     def strongLink(self, values):
         if (values[1]<50): # This shouldn't be hard coded

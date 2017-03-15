@@ -271,16 +271,31 @@ class STMT(object):
         """
         y_true = []
         y_score = []
+        blacklist = []
+        index = 0
         for predicted_row, true_row in zip(predicted_weights, true_labels):
             gold_standard = true_row.split()
-            rank, prob = zip(*self.m_incidence(predicted_row, label_index,
-                                               gold_standard))
-            # Is this ok?
+            incidence = self.m_incidence(predicted_row, label_index, gold_standard)
+            if incidence == None:
+                index = index + 1
+                nullList = [0] * len(label_index)
+                y_true.append(nullList)
+                y_score.append(nullList)
+                blacklist.append(index)
+                continue
+                
+            rank, prob = zip(*incidence)
             if 1 in rank:
                 y_true.append(rank)
                 y_score.append(prob)
+            else:
+                nullList = [0] * len(label_index)
+                y_true.append(nullList)
+                y_score.append(nullList)
+                blacklist.append(index)
+            index = index + 1
 
-        return y_true, y_score
+        return y_true, y_score, blacklist
 
     def to_array(self, y_true, y_score, y_words):
         """To sklean-ready array.
@@ -391,8 +406,8 @@ class STMT(object):
         y_words = self.getLabelWordsMapping(label_index, words)
         logging.info("Size in bytes of y_words: " + str(sys.getsizeof(y_words)))
 
-        y_true, y_score = self.get_scores(label_index, predicted_weights,
-                                          true_labels)
+        y_true, y_score, blacklist = self.get_scores(label_index, predicted_weights,
+                                                     true_labels)
 
         lbf.close()
         orf.close()
@@ -401,14 +416,14 @@ class STMT(object):
             y_true, y_score, y_words = self.to_array(y_true, y_score, y_words)
 
         self.cleanup(step='results')
-        return y_true, y_score, y_words
+        return y_true, y_score, y_words, blacklist
 
     def createWordProb(self, term_index, line):
         output = []
         for idx, prob in enumerate(line.split(',')):
             output.append((term_index[idx], float(prob)))
                           
-        sorted(output, key=lambda x: x[1], reverse=True)
+        output.sort(key=lambda x: x[1], reverse=True)
         #globals.WORDS_PER_TOPIC
         return output[:100]
         

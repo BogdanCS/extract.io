@@ -44,12 +44,17 @@ class TopicManager():
         # value - (total link strenght, total links)
         links = {}
         clusterer = TopTopicClusterer()
-        for docId, docInfo in docs.iteritems():
-            print docId
-            
+        for docId in docs.keys():
+            docInfo = docs[docId]
             # topicComposition a list of tuples (topic id, probability)
             topicComposition = model.getTopicComposition(docInfo)
+            if len(topicComposition) == 0:
+                logging.warn("Ignore document pmid=" + str(docId))
+                del docs[docId]
+                continue
 
+            logging.info("Processing document pmid=" + str(docId))
+            
             linker.getLinks(topicComposition, links)
 
             for topicId, prob in topicComposition:
@@ -59,9 +64,9 @@ class TopicManager():
                     topics[topicId] = TopicInformation(topicId, nameTokens, wordsProb)
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
-                
+               
             clusterer.updateDocClusters(docId, docInfo, model, topics)
-                
+            docInfo.setSummaries(topics)
         # Normalise counts based on the total number of documents for each attribute(e.g year)
         clusterer.normaliseCounts(topics)
         return (topics, links)
