@@ -14,6 +14,10 @@ from statsmodels.tsa.stattools import adfuller
 # We may need a bigger range of the data - or more granular - consider months?
 # Store months and use it for forecasting but remove them before sending to UI? (i.e when expanding)
 
+class DummyTSForecaster(object):
+    def getForecast(self, dummy):
+        logging.info("Not computing forecast")
+    
 class TSForecaster(object):
     FUTURE_TIME_WINDOW = 5 # years
     FIND_BEST_PARAMS = False

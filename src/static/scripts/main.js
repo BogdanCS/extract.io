@@ -1,9 +1,11 @@
 (function() {
 
-  var LIMIT = 10;
+  var LIMIT = 50;
 
   var keyword = "diabetes",
-      model = "LLDA",
+      model = "DUAL",
+      url,
+      backupReqTimer,
       response;
 
   var startDatepickerState = 0,
@@ -87,7 +89,7 @@
     var pathArray = document.URL.split('/');
     var requestType = model == "DUAL" ? "rpcNewSearchDualView" : "rpcNewSearch"
       
-    var url = pathArray[0] + "//" + pathArray[2] + "/" + requestType + "?keywords=" + keyword;
+    url = pathArray[0] + "//" + pathArray[2] + "/" + requestType + "?keywords=" + keyword;
 
     startDate = Math.floor(jQuery("#startdatepicker").datepicker("getDate").getTime() / 1000);
     endDate = Math.floor(jQuery("#enddatepicker").datepicker("getDate").getTime() / 1000);
@@ -100,23 +102,33 @@
     // make call
     var http_request = new XMLHttpRequest();
     http_request.open("GET", url, true);
-    http_request.onreadystatechange = function() {
-      if (http_request.readyState == 4) {
-        hideLoading();
-
-        if (http_request.status == 200) {
-          onSuccess(http_request.responseText);
-        } 
-        else {
-          onFailure();
-        }
-      }
-    }
-
+    http_request.onreadystatechange = createHttpReady(http_request)
     http_request.send(null);
 
     pauseInitialAnimation();
     displayLoading();
+  }
+
+  function createHttpReady(http_request)
+  {
+      return function () {
+      if (http_request.readyState == 4) {
+
+        if (http_request.status == 200) {
+          hideLoading();
+          onSuccess(http_request.responseText);
+        } 
+        else {
+	  console.log("Retrying..")
+	  backupReqTimer = setTimeout(function() {
+	      console.log(url)
+	      var backup_request = new XMLHttpRequest();
+	      backup_request.open("GET", url, true);
+	      backup_request.onreadystatechange = createHttpReady(backup_request)
+	      backup_request.send(null)}, 
+		     60000);
+        }
+	  }}
   }
 
   function onSuccess(responseText) {
@@ -167,7 +179,15 @@
    * Removes chart
    */
   function removeTopics() {
-    currentChart.remove();
+    if (backupReqTimer != null)
+    {
+	clearTimeout(backupReqTimer)
+    }
+      
+    if (currentChart != null)
+    {
+	currentChart.remove();
+    }
   }
 
   /**
@@ -323,6 +343,10 @@
 	  // Delete lone numbers
 	  // multi select
 	  var links = response.links;
+	  for (var idx = 0; idx < links.length; idx++)
+	   {
+	       console.log(links[idx])
+	   }
 	  var simulation = d3.forceSimulation()
 		.force("link", d3.forceLink().id(function(d) { return d.uid; })
 		.distance(function(d) { return (1/d.value)*20000;}))
@@ -429,24 +453,28 @@
 	  $('circle').click(function ()
 	  {
 	      var d = this.__data__;
-	      drawDocs(d.docs, d.wordsProb, d.nameTokens)
-	      if(d.years.length > 0)
-		  drawTemporalTrend(d.years, d.maxYearCount, "tempHist")
-	      else
+	      
+	      if (model != "DUAL")
 	      {
-		  var area = _('tempHist');
-		  // Clear draw area.
-		  area.innerHTML = null;
-		  $('#tempHist').prepend("<span>Not enough data</span>");
-	      }
-	      if(d.forecastYears.length > 0)
-		  drawTemporalTrend(d.forecastYears, d.maxYearCount, "forTempHist")
-	      else
-	      {
-		  var area = _('forTempHist');
-		  // Clear draw area.
-		  area.innerHTML = null;
-		  $('#forTempHist').prepend("<span>Not enough data to forecast</span>");
+		  drawDocs(d.docs, d.wordsProb, d.nameTokens)
+		  if(d.years.length > 0)
+	     	      drawTemporalTrend(d.years, d.maxYearCount, "tempHist")
+		  else
+		  {
+	     	      var area = _('tempHist');
+	     	      // Clear draw area.
+	     	      area.innerHTML = null;
+	     	      $('#tempHist').prepend("<span>Not enough data</span>");
+		  }
+		  if(d.forecastYears.length > 0)
+	     	      drawTemporalTrend(d.forecastYears, d.maxYearCount, "forTempHist")
+		  else
+		  {
+	     	      var area = _('forTempHist');
+	     	      // Clear draw area.
+	     	      area.innerHTML = null;
+	     	      $('#forTempHist').prepend("<span>Not enough data to forecast</span>");
+		  }
 	      }
 	      highlightAdjacent(d, 0.1) // argument is opacity
 	  })
@@ -568,9 +596,6 @@
 	     for (var idx = 0; idx < listLength && idx < 5; idx++){
 		     pmid = docs[idx]
 		     doc = response.docs[pmid]
-		     //lines = doc.split("<br>")
-		     //pmid = (lines[0].split(':'))[1]
-		     //console.log(pmid)
 		     titleLength = doc.title.length < 21 ? doc.title.length : 21 
 		     title = doc.title.slice(0,titleLength) + "..."
 		     area.innerHTML += "<button class=\"region\" id=\"but"+pmid+"\">"+title+"</button>"
@@ -742,11 +767,13 @@
         },
         remove: function() {
 
+	  if (node != null)
           node.transition()
             .duration(1000)
             .attr("r", 0)
             .remove();
 
+	  if (svg != null)
           svg.style("opacity", 1)
             .transition()
             .duration(1000)

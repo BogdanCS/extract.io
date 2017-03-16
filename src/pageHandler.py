@@ -12,6 +12,7 @@ from topicmanager import TopicManager
 from topicmodel import LDATopicModel, LLDATopicModel
 from topiclinker import DummyTopicLinker, ComparisonTopicLinker
 from documentmanager import DocumentManager
+from tsforecaster import DummyTSForecaster
 
 #import jinja2
 #JINJA_ENVIRONMENT = jinja2.Environment(
@@ -37,30 +38,51 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
                     'startDate': self.request.get('start_date'),
                     'endDate': self.request.get('end_date'),
                     'limit': self.request.get('limit')}
+            filename = req['keywords'] + "_" + req['startDate'] + "_" + req['endDate'] + "_" + req['limit']
+
+            if (os.path.isfile(globals.CACHE_PATH + filename + "_dual_lock") or
+                os.path.isfile(globals.CACHE_PATH + filename + "_LLDA_lock")):
+                self.response.out.set_status(500)
+                return
+            elif (os.path.isfile(globals.CACHE_PATH + filename + "_dual")):
+                with open(globals.CACHE_PATH + filename + "_dual", 'r') as infile:
+                    data = json.load(infile)
+                # Set json response
+                self.response.out.write(json.dumps(data, default=lambda o: o.__dict__))
+                return
+
+            with open(globals.CACHE_PATH + filename + "_dual_lock", 'w') as lockfile:
+                lockfile.write("Lock")
+                
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
             
             lldamodel = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
+            print "ce plm"
             ldamodel = LDATopicModel(globals.LDA_MODEL)
+            print "ce plm2"
                 
             # Retrieve topics and links
             (ldaTopics, _) = TopicManager().getTopics(ldamodel, 
                                                       globals.PROCESSED_CACHED_CORPUS,
-                                                      DummyTopicLinker())
+                                                      DummyTopicLinker(), DummyTSForecaster(), False)
             (lldaTopics, _) = TopicManager().getTopics(lldamodel, 
                                                        globals.PROCESSED_CACHED_CORPUS,
-                                                       DummyTopicLinker())
+                                                       DummyTopicLinker(), DummyTSForecaster(), False)
             
             # We need to make sure the UIDs are unique between the two sets of topics
-            for topic in lldaTopics:
-                topic.uid = -topic.uid
+            lldaTopicsNew = {}
+            for topicId, topicInfo in lldaTopics.iteritems():
+                topicInfo.uid = -topicInfo.uid
+                lldaTopicsNew[-topicId] = topicInfo
                 
             # Compute cosine similarity between topics and then get links
             # Links are from LLDA topic(source to LDA topic(target)
             links = []
-            ComparisonTopicLinker().getLinks(lldaTopics, ldaTopics, links)
+            ComparisonTopicLinker().getLinks(lldaTopicsNew.values(), ldaTopics.values(), links)
             
-            topics = ldaTopics + lldaTopics
+            topics = dict(ldaTopics, **lldaTopicsNew)
+            #topics = ldaTopics + lldaTopics
 
             #ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
             #lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
@@ -69,6 +91,15 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             #print json.dumps({"topics" : topics,
             #                  "links"  : links}, default=lambda o: o.__dict__)
             
+            with open(globals.CACHE_PATH + filename + "_dual", 'w') as outfile:
+                json.dump({"topics" : topics,
+                            "links"  : links}, 
+                          outfile,
+                          default=lambda o: o.__dict__
+                          )
+                
+            os.remove(globals.CACHE_PATH + filename + "_dual_lock")
+
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,
                                                 "links"  : links}, default=lambda o: o.__dict__))
@@ -77,37 +108,31 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             traceback.print_exc()
             self.response.out.write(json.dumps({"error":str(e)}))
         
-#class RPCNewModelDualViewHandler(webapp2.RequestHandler):
+#class RPCNewModelHandler(webapp2.RequestHandler):
+#    """ Process RPC requests for new model. """
+#    """ This bypasses the corpus retrieval and preprocessing """
+#    """ It assummes that a cached corpus exists """
+#
 #    def get(self):
-        
-#class RPCDualViewHandler(webapp2.RequestHandler):
-#    def get(self):
-        
-class RPCNewModelHandler(webapp2.RequestHandler):
-    """ Process RPC requests for new model. """
-    """ This bypasses the corpus retrieval and preprocessing """
-    """ It assummes that a cached corpus exists """
-
-    def get(self):
-        try:
-            if not globals.PROCESSED_CACHED_CORPUS:
-                raise Exception("No corpus has been processed")
-        
-            req = { 'model' : self.request.get('model')}
-            
-            # This could be model factory
-            model = None
-            if(req['model'] == 'LLDA'):
-                model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
-            else:
-                model = LDATopicModel(globals.LDA_MODEL)
-
-            # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
-            
-        except Exception, e:
-            traceback.print_exc()
-            self.response.out.write(json.dumps({"error":str(e)}))
+#        try:
+#            if not globals.PROCESSED_CACHED_CORPUS:
+#                raise Exception("No corpus has been processed")
+#        
+#            req = { 'model' : self.request.get('model')}
+#            
+#            # This could be model factory
+#            model = None
+#            if(req['model'] == 'LLDA'):
+#                model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
+#            else:
+#                model = LDATopicModel(globals.LDA_MODEL)
+#
+#            # Retrieve topics and links
+#            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
+#            
+#        except Exception, e:
+#            traceback.print_exc()
+#            self.response.out.write(json.dumps({"error":str(e)}))
         
 class RPCNewSearchHandler(webapp2.RequestHandler):
     """ Process RPC requests for new search. """
@@ -119,16 +144,21 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                     'endDate': self.request.get('end_date'),
                     'limit': self.request.get('limit'),
                     'model': self.request.get('model')}
-            startDate = ''.join(c for c in req['startDate'] if c.isdigit())
-            endDate = ''.join(c for c in req['endDate'] if c.isdigit())
-            filename = req['keywords'] + "_" + startDate + "_" + endDate + "_" + req['limit'] + "_" + req['model']
+            filename = req['keywords'] + "_" + req['startDate'] + "_" + req['endDate'] + "_" + req['limit'] + "_" + req['model']
 
-            if (os.path.isfile(globals.CACHE_PATH + filename)):
+            # Need to check DUAL for LLDA
+            if (os.path.isfile(globals.CACHE_PATH + filename + "_lock")):
+                self.response.out.set_status(500)
+                return
+            elif (os.path.isfile(globals.CACHE_PATH + filename)):
                 with open(globals.CACHE_PATH + filename, 'r') as infile:
                     data = json.load(infile)
                 # Set json response
                 self.response.out.write(json.dumps(data, default=lambda o: o.__dict__))
                 return
+                
+            with open(globals.CACHE_PATH + filename + "_lock", 'w') as lockfile:
+                lockfile.write("Lock")
                 
             # Recreate PROCESSED_CACHED_CORPUS
             DocumentManager().getDocuments(req) 
@@ -153,6 +183,8 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                           default=lambda o: o.__dict__
                           )
             
+            os.remove(globals.CACHE_PATH + filename + "_lock")
+                
             # Set json response
             self.response.out.write(json.dumps({"topics" : topics,
                                                 "links"  : links,
@@ -162,11 +194,9 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             traceback.print_exc()
             self.response.out.write(json.dumps({"error":str(e)}))
 
-#class RPCGetXHandler(webapp.RequestHandler):
-#    """ Process RPC requests for getting X. """
 
 application = webapp2.WSGIApplication([('/rpcNewSearch', RPCNewSearchHandler),
-                                       ('/rpcNewModel', RPCNewModelHandler),
+#                                       ('/rpcNewModel', RPCNewModelHandler),
                                        ('/rpcNewSearchDualView', RPCNewSearchDualViewHandler),
                                        ('/.*', MainPage)], debug=True)
 

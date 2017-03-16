@@ -21,8 +21,8 @@ class SimpleTopicLinker:
                                               links[(source,target)][1] + 1) 
     
     def strongLink(self, values):
-        if (values[1]<50): # This shouldn't be hard coded
-            return False
+        #if (values[1]<5): # This shouldn't be hard coded
+        #    return False
         return True
         
     def getFinalValue(self, values):

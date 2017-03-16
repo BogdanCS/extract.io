@@ -9,18 +9,18 @@ from tsforecaster import TSForecaster
 
 class TopicManager():
 
-    def getTopics(self, model, docs, linker=SimpleTopicLinker()):
+    def getTopics(self, model, docs, linker=SimpleTopicLinker(), forecaster=TSForecaster(), summary = True):
         logging.info("getTopics()")
         
         # Extract basic information from our document set about each topic
         # We keep the model as a global variables so we don't have to load it each time
-        (topics, links) = self.__getTopicsBasicInfo(model, docs, linker)
+        (topics, links) = self.__getTopicsBasicInfo(model, docs, linker, summary)
         
         # Convert the dictionaries in which we store years counts and docs ids
         # to a regular list so we can pass it to the UI
         # Also get forecast for subsequent years
         for v in topics.itervalues():
-            TSForecaster().getForecast(v)
+            forecaster.getForecast(v)
 
             v.finaliseYears()
             v.finaliseDocs()
@@ -36,7 +36,7 @@ class TopicManager():
         
         return (topics, link_list)
         
-    def __getTopicsBasicInfo(self, model, docs, linker):
+    def __getTopicsBasicInfo(self, model, docs, linker, summary = True):
         # key - topic id
         # value - TopicInformation
         topics = {}
@@ -65,8 +65,10 @@ class TopicManager():
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
                
-            clusterer.updateDocClusters(docId, docInfo, model, topics)
-            docInfo.setSummaries(topics)
+            if summary:
+                clusterer.updateDocClusters(docId, docInfo, model, topics, topicComposition)
+                docInfo.setSummaries(topics)
         # Normalise counts based on the total number of documents for each attribute(e.g year)
-        clusterer.normaliseCounts(topics)
+        if summary:
+            clusterer.normaliseCounts(topics)
         return (topics, links)

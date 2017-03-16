@@ -24,13 +24,7 @@ class TopTopicClusterer:
         else:
            dct[key] = 1
         
-    def updateDocClusters(self, docId, docInfo, model, clusters):
-        #for docId, docInfo in docs.iteritems():
-        topicComposition = model.getTopicComposition(docInfo)
-        if len(topicComposition) == 0:
-            logging.warn("No topics inferred")
-            return
-
+    def updateDocClusters(self, docId, docInfo, model, clusters, topicComposition):
         #maxIdx = self.__getMaxTopicIndex(topicComposition)
         #if (maxIdx not in clusters):
         #    raise Exception('Topic id not found')
@@ -46,7 +40,6 @@ class TopTopicClusterer:
             #3. Add its year of publishment
             self.__incrementCount(docInfo.year, clusters[topicComposition[idx][0]].years)
             self.__incrementCount(docInfo.year.split('-')[0], self.docsPerYear)
-            #clusters[topicComposition[idx][0]].years.add(docInfo.year)
         
     # Turn absolute number of document to percetange of documents out of all the documents
     # published in that year from the corpus
