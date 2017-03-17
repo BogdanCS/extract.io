@@ -48,9 +48,6 @@ class TopTopicClusterer:
             for yearMonth, count in cluster.years.iteritems():
                 cluster.years[yearMonth] = int(math.floor(100 * count / self.docsPerYear[yearMonth.split('-')[0]])) 
             
-    def __getMaxTopicIndex(self, topicComposition):
-        return max(topicComposition, key=itemgetter(1))[0]
-            
     def __sortTopicComposition(self, topicComposition):
         return sorted(topicComposition, key=itemgetter(1), reverse=True)
 

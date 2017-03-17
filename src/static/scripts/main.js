@@ -10,7 +10,7 @@
   var LLDA_LINK_SIZE = 120;
 
   var keyword = "diabetes",
-      model = "LLDA",
+      model = "LDA",
       url,
       backupReqTimer,
       response;
@@ -537,6 +537,62 @@
 	      return topicTitle.slice(0,titleLength) + "..."
 	  }
 	    
+	  function createModalNew(pmid, doc)
+	  {
+	      var modal = "<div id=\"mod"+ pmid +"\" class=\"modal\">" +
+		          "<div class=\"modal-content\">" +
+                          "<span class=\"close\" id=clo"+ pmid +">&times;</span>" +
+                          "<p><b>" + doc.title + "</b></p>"
+	      
+	      var words = doc.uiText.split(" ")
+	      
+	      modal += "<p>"
+	      for (var idx = 0; idx < doc.topicList.length; idx++)
+	      {
+		  var topicId = doc.topicList[idx]
+		  modal += "<a class=\"modalReg\" id=\"top" + topicId + "\">"
+		  modal += createTopicTitle(response.topics[topicId].nameTokens) + "</a>"
+		  
+		  topId = "#top" + topicId
+		  $("#docs").on({
+		      mouseenter: function(e) {
+			  $(".snip").css({opacity: 0.2})
+			  var curCls = ".sniptop" + (this.id).slice(3,(this.id).length)
+			  $(curCls).css({opacity: 1.0})
+		      },
+		      mouseleave: function(e) {
+			  $(".snip").css({opacity: 1.0})
+		      }
+		  }, topId)
+		  
+	      }
+
+	      modal += "</p><p>"
+
+	      for (var idx = 0; idx < words.length; idx++)
+	      {
+		  modal += "<span class=\"snip "
+		  
+		  for (var jdx = 0; jdx < doc.topicList.length; jdx++)
+		  {
+		      var topicId = doc.topicList[jdx]
+		      if (idx >= doc.summaries[topicId][0] &&
+			  idx <= doc.summaries[topicId][1])
+		      {
+			  modal += " sniptop" + topicId
+		      }
+		  }
+		  
+		  modal += "\">" + words[idx] + " " + "</span>"
+	      }
+	      
+              modal += "</p>" +
+	               "</div>" +
+                       "</div>"
+
+	      return modal
+	  }
+
 	  function createModal(pmid, doc)
 	  {
 	      var modal = "<div id=\"mod"+ pmid +"\" class=\"modal\">" +
@@ -627,7 +683,7 @@
 		     titleLength = doc.title.length < 21 ? doc.title.length : 21 
 		     title = doc.title.slice(0,titleLength) + "..."
 		     area.innerHTML += "<button class=\"region\" id=\"but"+pmid+"\">"+title+"</button>"
-		     area.innerHTML += createModal(pmid, doc)
+		     area.innerHTML += createModalNew(pmid, doc)
 		 
 		     var btnid = "#but" + pmid
 		     $("#docs").on("click", btnid, function(e) {

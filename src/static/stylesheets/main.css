@@ -157,6 +157,20 @@ footer a:hover .underline {
   -webkit-transform: scaleX(1);
   transform: scaleX(1);
 }
+
+.modalReg{
+  color: #000;
+  background: #888;
+}
+.modalCur{
+  color: #000;
+  background: #888;
+}
+.modalReg:hover{
+  color: #ddd;
+  background: #444;
+}
+
 nav {
   float: right;
   color: #888;

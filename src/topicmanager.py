@@ -1,6 +1,7 @@
 import logging
 
 import globals
+from decimal import *
 from documentclusterer import TopTopicClusterer
 from topicinformation import TopicInformation
 from linkinformation import LinkInformation
@@ -36,6 +37,13 @@ class TopicManager():
                                                  linker.getFinalValue(values)))
         
         return (topics, link_list)
+                
+    def __updateWordProbSum(self, wordsProb, wordProbAvg):
+        for word, prob in wordsProb:
+            if word in wordProbAvg:
+                wordProbAvg[word] = wordProbAvg[word] + prob
+            else:
+                wordProbAvg[word] = prob
         
     def __getTopicsBasicInfo(self, model, docs, linker, summary = True):
         # key - topic id
@@ -45,6 +53,8 @@ class TopicManager():
         # value - (total link strenght, total links)
         links = {}
         clusterer = TopTopicClusterer()
+        # average word/topic probability
+        wordProbSum = {}
         for docId in docs.keys():
             docInfo = docs[docId]
             # topicComposition a list of tuples (topic id, probability)
@@ -63,13 +73,19 @@ class TopicManager():
                     nameTokens = model.getTopicName(topicId) 
                     wordsProb = model.getTopicWords(topicId)
                     topics[topicId] = TopicInformation(topicId, nameTokens, wordsProb)
+                    if summary:
+                        self.__updateWordProbSum(wordsProb, wordProbSum)
                 # Update topic score 
                 topics[topicId].score = topics[topicId].score + (prob/len(docs));
-               
             if summary:
                 clusterer.updateDocClusters(docId, docInfo, model, topics, topicComposition)
-                docInfo.setSummaries(topics)
-        # Normalise counts based on the total number of documents for each attribute(e.g year)
+        
         if summary:
+            # Set summaries
+            for docId, docInfo in docs.iteritems():
+                noTopics = len(topics)
+                wordProbAvg = {k: Decimal(v) / Decimal(noTopics) for k, v in wordProbSum.iteritems()}
+                docInfo.setSummariesDec(topics, wordProbAvg)
+            # Normalise counts based on the total number of documents for each attribute(e.g year)
             clusterer.normaliseCounts(topics)
         return (topics, links)
