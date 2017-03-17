@@ -96,7 +96,8 @@ class LLDATopicModel(TopicModel):
             
         # Filter out unlikely labels
         # Need to normalise topic proabilities with the other models
-        output = [(index, prob) for (index, prob) in output if prob > globals.TOPIC_PROB_THRESHOLD]
+        output = [(index, prob) for (index, prob) in output if prob > globals.TOPIC_PROB_THRESHOLD * 0.010]
+        print "LLDA topics %d" % len(output)
         return output
             
     def __unpackDocInfo(self, dataset):
@@ -160,11 +161,15 @@ class LDATopicModel(TopicModel):
         # Update cache
         LDA_MODEL = self.model
 
+    # SET MINIMUM PROBABILITY FOR BOTH LDA AND LLDA !!!
+
     def getTopicComposition(self, docInfo):
         bow = self.bowConverter.doc2bow(docInfo.text.split())
         self.bowCache.append(bow)
         # globals.THRESHOLD ?
-        return self.model.get_document_topics(bow)
+        topics = self.model.get_document_topics(bow, minimum_probability=globals.TOPIC_PROB_THRESHOLD)
+        print "LDA topics %d" % len(topics)
+        return topics
 
     def getTopicWords(self, topicId):
         #return self.model.show_topic(topicId, topn=len(self.model.id2word))
@@ -206,7 +211,12 @@ class LDATopicModel(TopicModel):
                 bestOverlap = overlap
                 bestLabel = label
                 
-        return bestLabel.split()
+        tokens = (topWords.keys())[:5]
+        tokens.append('  (')
+        tokens.extend(bestLabel.split())
+        tokens[-1] = tokens[-1] + "* )"
+        
+        return tokens
         
     def getPerplexity(self):
         logging.info("Start getPerplexity")

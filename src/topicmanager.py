@@ -28,8 +28,9 @@ class TopicManager():
         # Convert link list dictionary to a simple list of LinkInformation
         # Drop weak links
         link_list = []
+        noDocs = len(docs)
         for (source, target), values in links.iteritems():
-            if(linker.strongLink(values)):
+            if(linker.strongLink(values, noDocs)):
                 link_list.append(LinkInformation(source, 
                                                  target, 
                                                  linker.getFinalValue(values)))

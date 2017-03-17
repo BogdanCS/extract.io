@@ -1,9 +1,16 @@
 (function() {
 
   var LIMIT = 50;
+    
+  var LDA_NODE_SIZE= 1.5;
+  var LLDA_NODE_SIZE = 10;
+    
+  var LDA_LINK_SIZE = 1.2;
+  var DUAL_LINK_SIZE = 1.2;
+  var LLDA_LINK_SIZE = 120;
 
   var keyword = "diabetes",
-      model = "DUAL",
+      model = "LLDA",
       url,
       backupReqTimer,
       response;
@@ -343,13 +350,23 @@
 	  // Delete lone numbers
 	  // multi select
 	  var links = response.links;
-	  for (var idx = 0; idx < links.length; idx++)
-	   {
-	       console.log(links[idx])
-	   }
 	  var simulation = d3.forceSimulation()
 		.force("link", d3.forceLink().id(function(d) { return d.uid; })
-		.distance(function(d) { return (1/d.value)*20000;}))
+		.distance(function(d) { 
+		    if (model == "LDA")
+		    {
+			console.log(d.value*LDA_LINK_SIZE)
+			return (1/(d.value*LDA_LINK_SIZE))*20000;
+	            }
+		    else if (model == "LLDA")
+		    {
+			console.log("weird")
+			console.log(d.value*LLDA_LINK_SIZE)
+			return (1/(d.value*LLDA_LINK_SIZE))*20000;
+		    }
+		    else 
+			return (1/(d.value*DUAL_LINK_SIZE))*20000;
+		}))
 		.force("charge", d3.forceManyBody())
 		.force("center", d3.forceCenter(w / 2, h / 2));
 
@@ -362,9 +379,10 @@
 	    
 	  // Create this index for later use when highlighting neighbouring nodes
 	  linkedByIdx = {};
-	    links.forEach(function(d) {
-		linkedByIdx[d.source.uid + "," + d.target.uid] = 1;
-	    });
+	  links.forEach(function(d) {
+	      linkedByIdx[d.source + "," + d.target] = 1;
+	  });
+	  console.log(linkedByIdx)
 
 	  // Topics - nodes
 	  var nodes = Object.keys(response.topics).map(function(key){
@@ -377,7 +395,8 @@
 	      if(nodes[idx].score > maxNodeValue)
 		  maxNodeValue = nodes[idx].score;
 	  }
-          var fill = d3.scaleOrdinal().range(Math.random() >= 0.5 ? ['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'] : ['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
+          var fill = d3.scaleOrdinal().range(['#253494', '#2c7fb8', '#41b6c4', '#a1dab4', '#ffffcc']);
+	  var fillLLDA = d3.scaleOrdinal().range(['#bd0026', '#f03b20', '#fd8d3c', '#fecc5c', '#ffffb2'])
           //var radiusCoefficient = (3500 / w) * (maxNodeValue / 100);
 	     
           node = svg.selectAll(".node")
@@ -420,7 +439,16 @@
           node.transition()
             .duration(1000)
             .attr("r", function(d) {
-		return d.score*500; /// radiusCoefficient;
+		if (model == "LLDA")
+		{
+		    return d.score*500*LLDA_NODE_SIZE;
+		}
+		else if (model == "DUAL" && d.uid < 0)
+		{
+		    return d.score*500*(LLDA_NODE_SIZE*0.8);
+		}
+
+		return d.score*500*LDA_NODE_SIZE; /// radiusCoefficient;
             });
 
           svg.style("opacity", 1e-6)
@@ -494,7 +522,7 @@
 	      });
 
 	      node.style("opacity", function(o) {
-		  return neighboring(d, o) ? 1 : opacity;
+		  return d.uid == o.uid || neighboring(d, o) ? 1 : opacity;
 	      });
 	  }
 
@@ -712,33 +740,12 @@
 		d.fx = null;
 		d.fy = null;
 	    } 
-          //function tick(e) {
-          //  var k = -0.1 * e.alpha;
-          //  nodes.forEach(function(o, i) {
-          //    o.y += k;
-          //    o.x += k;
-          //  });
-
-          //  node.attr("cx", function(d) {
-          //    return d.x;
-          //  }).attr("cy", function(d) {
-          //    return d.y;
-          //  });
-          //}
-
-	  //function gravity(alpha) {
-	  //	return function(d) {
-	  //	    d.y += (d.cy - d.y) * alpha;
-	  //	    d.x += (d.cx - d.x) * alpha;}
-	  //};
-
-          //function charge(d) {
-          //  return -Math.pow(d.score / (radiusCoefficient * 2), 2.0) / 8;
-          //}
 
           function assignColor(d) {
-            //console.log(d.value, maxNodeValue, Math.floor(d.value / (maxNodeValue / 5)));
-            d.color = fill(Math.floor(d.score / (maxNodeValue / 5)));
+	    if(d.uid >= 0)
+		d.color = fill(Math.floor(d.score / (maxNodeValue / 5)));
+	    else
+		d.color = fillLLDA(Math.floor(d.score / (maxNodeValue / 5)));
             return d.color;
           }
 
