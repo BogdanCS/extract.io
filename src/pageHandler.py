@@ -10,7 +10,7 @@ from google.appengine.ext.webapp import template
 import globals
 from topicmanager import TopicManager
 from topicmodel import LDATopicModel, LLDATopicModel
-from topiclinker import DummyTopicLinker, ComparisonTopicLinker
+from topiclinker import DummyTopicLinker, ComparisonTopicLinker, PMITopicLinker
 from documentmanager import DocumentManager
 from tsforecaster import DummyTSForecaster
 
@@ -82,15 +82,13 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
             ComparisonTopicLinker().getLinks(lldaTopicsNew.values(), ldaTopics.values(), links)
             
             topics = dict(ldaTopics, **lldaTopicsNew)
-            #topics = ldaTopics + lldaTopics
 
-            #ldaEvals = ModelEvaluator().getMeasures(ldaModel, ldaTopics)
-            #lldaEvals = ModelEvalutor().getMeasures(lldaModel, lldaTopics)
+            print "*****EVAL****"
+            print lldamodel.getAvgPrecision()
+            print lldamodel.getPerplexity()
+            print ldamodel.getAvgPrecision()
+            print ldamodel.getPerplexity()
 
-            # Dump this to file and retrieve it (i.e cache)
-            #print json.dumps({"topics" : topics,
-            #                  "links"  : links}, default=lambda o: o.__dict__)
-            
             with open(globals.CACHE_PATH + filename + "_dual", 'w') as outfile:
                 json.dump({"topics" : topics,
                             "links"  : links}, 
@@ -107,32 +105,6 @@ class RPCNewSearchDualViewHandler(webapp2.RequestHandler):
         except Exception, e:
             traceback.print_exc()
             self.response.out.write(json.dumps({"error":str(e)}))
-        
-#class RPCNewModelHandler(webapp2.RequestHandler):
-#    """ Process RPC requests for new model. """
-#    """ This bypasses the corpus retrieval and preprocessing """
-#    """ It assummes that a cached corpus exists """
-#
-#    def get(self):
-#        try:
-#            if not globals.PROCESSED_CACHED_CORPUS:
-#                raise Exception("No corpus has been processed")
-#        
-#            req = { 'model' : self.request.get('model')}
-#            
-#            # This could be model factory
-#            model = None
-#            if(req['model'] == 'LLDA'):
-#                model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
-#            else:
-#                model = LDATopicModel(globals.LDA_MODEL)
-#
-#            # Retrieve topics and links
-#            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
-#            
-#        except Exception, e:
-#            traceback.print_exc()
-#            self.response.out.write(json.dumps({"error":str(e)}))
         
 class RPCNewSearchHandler(webapp2.RequestHandler):
     """ Process RPC requests for new search. """
@@ -171,7 +143,7 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
                 model = LDATopicModel(globals.LDA_MODEL)
                 
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS)
+            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS, PMITopicLinker())
 
             print model.getPerplexity()
 

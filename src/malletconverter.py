@@ -113,4 +113,6 @@ class MalletConverter:
         return prepro.stemWords(
                prepro.removeStopWords(
                prepro.removePunctuation(
-               prepro.removeCapitals(line))))
+               prepro.removeCapitals(
+               prepro.removeNonNouns(line)))))
+               # remove non nouns

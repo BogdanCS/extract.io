@@ -20,6 +20,8 @@ PUBMED_PUBLISH_MONTH_FIELD_NAME = "Month"
 CACHE_PATH = os.path.dirname(__file__) + "/static/cache/"
 TRAINED_MODEL_PATH = os.path.dirname(__file__) + "/static/models/training.lda"
 CORPUS_PATH = os.path.dirname(__file__) + "/static/corpus/pubmed.mallet"
+LDA_TOPIC_PATH = os.path.dirname(__file__) + "/static/models/pubmed.lda.topics"
+LLDA_TOPIC_PATH = os.path.dirname(__file__) + "/static/models/pubmed.llda.topics"
 LLDA_MODEL_NAME = "labellda_model"
 
 # These are only initialised once so we don't load them every

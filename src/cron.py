@@ -22,7 +22,7 @@ class Cron(webapp2.RequestHandler):
         logging.info("Cron starting..")
         pubmed = PubmedRetriever()
         #todo update
-        NO_DOCS = 10000
+        NO_DOCS = 50
         papers = pubmed.getDocumentsIf("diabetes", NO_DOCS, "2006", "2016")
 
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
@@ -41,10 +41,17 @@ class Cron(webapp2.RequestHandler):
         logging.info("Stop writing to file")
         
         # Train Labelled LDA model
-        LLDATopicModel().trainModel(malletCorpus, labels)
+        llda = LLDATopicModel()
+        llda.trainModel(malletCorpus, labels)
+        with io.FileIO(globals.LLDA_TOPIC_PATH, "w") as file:
+            file.write(llda.getAllTopics().encode('utf8'))
 
         # Train unsupervised LDA model
-        LDATopicModel().trainModel() #malletCorpus
+        lda = LDATopicModel()
+        lda.trainModel() #malletCorpus
+        with io.FileIO(globals.LDA_TOPIC_PATH, "w") as file:
+            file.write(lda.getAllTopics().encode('utf8'))
+        
 
 # TODO : Have different routes for different training sets
 application = webapp2.WSGIApplication([('/cron', Cron)], debug=True)

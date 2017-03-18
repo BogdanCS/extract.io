@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod   
 from nltk.corpus import stopwords
+import nltk
 import os
 import logging
 import time
@@ -74,6 +75,15 @@ class PubmedPreprocesser(Preprocesser):
                 result += word.lower() + " "
         return result
 
+    def removeNonNouns(self, text):
+        text = nltk.word_tokenize(text)
+        taggedText = nltk.pos_tag(text)
+        output = ""
+        for word, tag in taggedText:
+            if (tag.startswith("NN")):
+                output += word + " "
+        return output
+
 class PostPreprocesser:
     # Filter out words that appear in more than 60% of the documents
     # And in less than 5%
@@ -109,13 +119,5 @@ class PostPreprocesser:
         
     def __isExtreme(self, word, wordOccurenceCounter, noDocs):
         noOcc = wordOccurenceCounter[word]
-        return noOcc > noDocs * 0.75 or noOcc < noDocs * 0.05
+        return noOcc > noDocs * 0.60 or noOcc < noDocs * 0.05
         
-    
-#class TerMinePreprocesser(Preprocesser):
-    #def concatanateTexts(textList):
-
-#    def oneSentencePerLine(text):
-        #TODO point might not mean end of sentence
-#        return text.replace('.', '\n')
-            

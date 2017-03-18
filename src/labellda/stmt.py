@@ -418,6 +418,28 @@ class STMT(object):
         self.cleanup(step='results')
         return y_true, y_score, y_words, blacklist
 
+    def getWords(self):
+        LIDX = '00000{0}label-index'.format(sep)   # label index
+        TIDX = '00000{0}term-index'.format(sep)   # term index
+        
+        orf = open("{0}{1}_{2}{3}{4}.txt".format(
+            self.dir, self.name, 'train', sep, LIDX), 'r')
+        label_index = orf.read().split('\n')[:-1]
+        
+        ter = open("{0}{1}_{2}{3}{4}.txt".format(
+            self.dir, self.name, 'train', sep, TIDX), 'r')
+        term_index = ter.read().split('\n')[:-1]
+
+        TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        words = []
+        with gzip.open("{0}{1}_{2}{3}{4}.csv.gz".format(
+                self.dir, self.name, 'train', sep, TWOR), 'r') as f:
+            for line in f:
+                words.append(self.createWordProb(term_index, line))
+        # y_words is a list of tuples (label name, list(words/topic))
+        y_words = self.getLabelWordsMapping(label_index, words)
+        return y_words
+        
     def createWordProb(self, term_index, line):
         output = []
         for idx, prob in enumerate(line.split(',')):

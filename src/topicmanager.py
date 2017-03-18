@@ -34,7 +34,7 @@ class TopicManager():
             if(linker.strongLink(values, noDocs)):
                 link_list.append(LinkInformation(source, 
                                                  target, 
-                                                 linker.getFinalValue(values)))
+                                                 linker.getFinalValue(source, target, values, noDocs)))
         
         return (topics, link_list)
                 

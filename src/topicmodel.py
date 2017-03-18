@@ -68,6 +68,8 @@ class LLDATopicModel(TopicModel):
         
         # Load the newly trained model and update cache
         model = labellda.STMT(globals.LLDA_MODEL_NAME, epochs=400, mem=14000)
+        # For evaluation purposes load up all the words per topic
+        self.words = model.getWords()
         globals.LLDA_MODEL = model
         
     def inferTopics(self, dataset):
@@ -118,6 +120,15 @@ class LLDATopicModel(TopicModel):
             train_labels.append(labels[components[0]])
         return (tuple(train_space), tuple(train_labels))
         
+    def getAllTopics(self):
+        output = ""
+        for value in self.words:
+            wordsProb = value[1]
+            for word, prob in wordsProb:
+                output += word + " "
+            output += "\n"
+        return output
+        
     def getTopicWords(self, topicId):
         return self.words[topicId][1]
         
@@ -132,7 +143,7 @@ class LLDATopicModel(TopicModel):
         # better try to replicate that
         return np.exp(skm.log_loss(self.trueLabels, self.results))
         
-    def getAvgPrecisions(self):
+    def getAvgPrecision(self):
         return skm.average_precision_score(self.trueLabels, self.results)
     #def getAccuracy(self):
     # get recall
@@ -145,6 +156,14 @@ class LDATopicModel(TopicModel):
     # trainModel
     def __init__(self, model=None):
         self.model = model
+        
+        self.topicIdToName = {}
+        self.tp = 0
+        self.fp = 0
+
+        # word - (avg prob, max prob)
+        self.wordAverageMax = {}
+        
         self.bowConverter = gensim.corpora.Dictionary()
         if model:
             _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
@@ -168,7 +187,20 @@ class LDATopicModel(TopicModel):
         self.bowCache.append(bow)
         # globals.THRESHOLD ?
         topics = self.model.get_document_topics(bow, minimum_probability=globals.TOPIC_PROB_THRESHOLD)
-        print "LDA topics %d" % len(topics)
+        # Assign labels on demand
+        print docInfo.labels
+        for topicId, prob in topics:
+            label = self.assignLabel(topicId)
+            label = "".join(label.split())
+            if len(label) == 0:
+                logging.warn("No label assigned")
+                continue
+            elif label in docInfo.labels:
+                self.tp = self.tp + 1
+            else:
+                self.fp = self.fp + 1
+
+        logging.info("LDA topics %d" % len(topics))
         return topics
 
     def getTopicWords(self, topicId):
@@ -177,23 +209,26 @@ class LDATopicModel(TopicModel):
         
     def computeOverlap(self, label, text , topWords):
         overlap = 0.0
+        
         for word in label.split():
             if word.lower() in topWords:
-                overlap += topWords[word.lower()] * 2 # title premium, is 2 the right value?
+                overlap += self.wordAverageMax[word.lower()][1]/self.wordAverageMax[word.lower()][0] 
         for word in text.split():
             if word in topWords:
-                overlap += topWords[word]
+                overlap += topWords[word]/self.wordAverageMax[word][0]
         return overlap
         
-    # For unsupervised LDA we don't have a name (i.e label) for topics
-    # We will try to assign a MeSH label to the topic based on top 10 words
-    # Lesk algorithm
-    ### We return the top 5 words associated with the topic
-    def getTopicName(self, topicId):
-        output = []
+    def assignLabel(self, topicId):
+        if topicId in self.topicIdToName:
+            return " ".join(self.topicIdToName[topicId])
 
-        topWords = dict(self.model.show_topic(topicId, topn=10))
-        
+        topWords = dict(self.model.show_topic(topicId, topn=5))
+        self.updateWordAverage(topWords)
+        #trueTopWords = self.getTrueTopWords(topWords)
+        print "COMPARE"
+        print topWords
+        #print trueTopWords
+
         pubmed = PubmedRetriever()
         query = ""
         for word in topWords.iterkeys():
@@ -211,12 +246,56 @@ class LDATopicModel(TopicModel):
                 bestOverlap = overlap
                 bestLabel = label
                 
-        tokens = (topWords.keys())[:5]
-        tokens.append('  (')
-        tokens.extend(bestLabel.split())
-        tokens[-1] = tokens[-1] + "* )"
+        self.topicIdToName[topicId] = bestLabel.split()
+        return bestLabel
         
+    def updateWordAverage(self, topWords):
+        for word in topWords.keys():
+            if word not in self.wordAverageMax:
+                likelyTopics = self.model.get_term_topics(self.bowConverter.token2id[word])
+                print "GUARD"
+                print likelyTopics
+                if len(likelyTopics) == 0:
+                    logging.info("Word not found")
+                    self.wordAverageMax[word] = (0.0, 0.0)
+                else:
+                    self.wordAverageMax[word] = (float(sum([pair[0] for pair in likelyTopics]))/float(len(likelyTopics)),
+                                                 max(likelyTopics, key=itemgetter(1))[1])
+        
+    def getTrueTopWords(self, topWords):
+        trueTopWords = []
+        for word in topWords.keys():
+            if word not in self.wordAverageMax:
+                likelyTopics = self.model.get_term_topics(self.bowConverter.token2id[word])
+                print "GUARD"
+                print likelyTopics
+                if len(likelyTopics) == 0:
+                    logging.info("Word not found")
+                    self.wordAverageMax[word] = (0.0, 0.0)
+                else:
+                    self.wordAverageMax[word] = (float(sum([pair[0] for pair in likelyTopics]))/float(len(likelyTopics)),
+                                                 max(likelyTopics, key=itemgetter(1))[1])
+            trueTopWords.append((word, float(topWords[word])/float(self.wordAverageMax[word][0])))
+        trueTopWords = sorted(trueTopWords, key=itemgetter(1))
+        #trueTopWords = [word for word,prob in trueTopWords]
+        trueTopWords = trueTopWords[:5]
+        return dict(trueTopWords)
+        
+    # For unsupervised LDA we don't have a name (i.e label) for topics
+    # We will try to assign a MeSH label to the topic based on top 10 words
+    # Lesk algorithm
+    ### We return the top 5 words associated with the topic
+    def getTopicName(self, topicId):
+        topWords = dict(self.model.show_topic(topicId, topn=5))
+        tokens = topWords.keys()
+        #tokens = self.getTrueTopWords(topWords).keys()
+        tokens.append('  (')
+        tokens.extend(self.topicIdToName[topicId])
+        tokens[-1] = tokens[-1] + "* )"
         return tokens
+        
+    def getAvgPrecision(self):
+        return float(self.tp)/float(self.tp+self.fp)
         
     def getPerplexity(self):
         logging.info("Start getPerplexity")
@@ -225,11 +304,20 @@ class LDATopicModel(TopicModel):
         perplexity = np.exp2(-self.model.log_perplexity(self.bowCache))
         
         end = time.time()
-        logging.info("Stop preprocessing. Time(sec): ")
+        logging.info("Stop getPerplexity. Time(sec): ")
         logging.info(end-start)
         
         return perplexity
         
+    def getAllTopics(self, numWords):
+        topics = self.model.show_topics(num_topics=-1, formatted=False)
+        topicText = ""
+        for topicId, topicWords in topics:
+            for word,prob in topicWords:
+                topicText += word + " "
+            topicText += "\n"
+        return topicText
+
     def __preprocess(self, line):
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
         prepro = PubmedPreprocesser(stemmer)

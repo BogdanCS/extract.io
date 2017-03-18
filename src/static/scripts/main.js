@@ -7,10 +7,10 @@
     
   var LDA_LINK_SIZE = 1.2;
   var DUAL_LINK_SIZE = 1.2;
-  var LLDA_LINK_SIZE = 120;
+  var LLDA_LINK_SIZE = 0.5;
 
   var keyword = "diabetes",
-      model = "LDA",
+      model = "LLDA",
       url,
       backupReqTimer,
       response;
@@ -533,7 +533,7 @@
 	      {
 		  topicTitle += tokens[jdx] + " "
 	      }
-	      titleLength = topicTitle.length < 11 ? doc.title.length : 11 
+	      titleLength = topicTitle.length < 20 ? doc.title.length : 20 
 	      return topicTitle.slice(0,titleLength) + "..."
 	  }
 	    
