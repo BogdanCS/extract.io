@@ -394,7 +394,8 @@ class STMT(object):
         with gzip.open("{0}{1}_{2}{3}{4}.csv.gz".format(
                 self.dir, self.name, 'train', sep, TWOR), 'r') as f:
             for line in f:
-                words.append(self.createWordProb(term_index, line))
+                #globals.WORDS_PER_TOPIC
+                words.append(self.createWordProb(term_index, line, 100))
 
         lbf = \
             open("{0}{1}_{2}{3}{4}_{5}-{6}.csv".format(
@@ -435,19 +436,18 @@ class STMT(object):
         with gzip.open("{0}{1}_{2}{3}{4}.csv.gz".format(
                 self.dir, self.name, 'train', sep, TWOR), 'r') as f:
             for line in f:
-                words.append(self.createWordProb(term_index, line))
+                words.append(self.createWordProb(term_index, line, 10))
         # y_words is a list of tuples (label name, list(words/topic))
         y_words = self.getLabelWordsMapping(label_index, words)
         return y_words
         
-    def createWordProb(self, term_index, line):
+    def createWordProb(self, term_index, line, wordsPerTopic):
         output = []
         for idx, prob in enumerate(line.split(',')):
             output.append((term_index[idx], float(prob)))
                           
         output.sort(key=lambda x: x[1], reverse=True)
-        #globals.WORDS_PER_TOPIC
-        return output[:100]
+        return output[:wordsPerTopic]
         
     def getLabelWordsMapping(self, label_index, words):
         y_words = []

@@ -43,14 +43,24 @@ class Cron(webapp2.RequestHandler):
         # Train Labelled LDA model
         llda = LLDATopicModel()
         llda.trainModel(malletCorpus, labels)
-        with io.FileIO(globals.LLDA_TOPIC_PATH, "w") as file:
-            file.write(llda.getAllTopics().encode('utf8'))
+        (observCoh, intrud, intrudList) = llda.getAllTopics()
+        with io.FileIO(globals.LLDA_TOPIC_PATH + ".obcoh", "w") as file:
+            file.write(observCoh.encode('utf8'))
+        with io.FileIO(globals.LLDA_TOPIC_PATH + ".intrd", "w") as file:
+            file.write(intrud.encode('utf8'))
+        with io.FileIO(globals.LLDA_TOPIC_PATH + ".intrli", "w") as file:
+            file.write(intrudList.encode('utf8'))
 
         # Train unsupervised LDA model
         lda = LDATopicModel()
         lda.trainModel() #malletCorpus
-        with io.FileIO(globals.LDA_TOPIC_PATH, "w") as file:
-            file.write(lda.getAllTopics().encode('utf8'))
+        (observCoh, intrud, intrudList) = lda.getAllTopics()
+        with io.FileIO(globals.LDA_TOPIC_PATH + ".obcoh", "w") as file:
+            file.write(observCoh.encode('utf8'))
+        with io.FileIO(globals.LDA_TOPIC_PATH + ".intrd", "w") as file:
+            file.write(intrud.encode('utf8'))
+        with io.FileIO(globals.LDA_TOPIC_PATH + ".intrli", "w") as file:
+            file.write(intrudList.encode('utf8'))
         
 
 # TODO : Have different routes for different training sets

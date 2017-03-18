@@ -1,5 +1,6 @@
 import logging
 import time
+import random
 import hunspell
 import gensim
 import io
@@ -121,16 +122,43 @@ class LLDATopicModel(TopicModel):
         return (tuple(train_space), tuple(train_labels))
         
     def getAllTopics(self):
-        output = ""
-        for value in self.words:
+        observCohText = ""
+        intrudWorText = ""
+        intrudWorList = ""
+        
+        for jdx, value in enumerate(self.words):
             wordsProb = value[1]
-            for word, prob in wordsProb:
-                output += word + " "
-            output += "\n"
-        return output
+            intrudId = random.randint(0, len(wordsProb))
+            intrudWord = self.generateIntruder(jdx)
+            for idx, (word, prob) in enumerate(wordsProb):
+                observCohText += word + " "
+                if idx == intrudId:
+                    intrudWorText += intrudWord + " "
+                    intrudWorList += intrudWord + "\n"
+                intrudWorText += word + " "
+            observCohText += "\n"
+            intrudWorText += "\n"
+        return (observCohText, intrudWorText, intrudWorList)
+        
+    def generateIntruder(self, jdx):
+        iterations = 10
+        idx = random.randint(0, len(self.words) - 1)
+        while (idx == jdx and iterations > 0):
+            idx = random.randint(0, len(self.words) - 1)
+            iterations = iterations - 1
+            
+        iterations = 10
+        print self.words[idx]
+        kdx = random.randint(0, len(self.words[idx][1]) - 1)
+        while (self.words[idx][1][kdx] in self.words[jdx][1] and iterations > 0):
+            kdx = random.randint(0, len(self.words[idx][1]) - 1)
+            iterations = iterations - 1
+            
+        return self.words[idx][1][kdx][0]
         
     def getTopicWords(self, topicId):
         return self.words[topicId][1]
+        
         
     def getTopicName(self, topicId):
         # We are storing multi word label names as camel case - convert back to original version
@@ -309,15 +337,40 @@ class LDATopicModel(TopicModel):
         
         return perplexity
         
-    def getAllTopics(self, numWords):
+    def getAllTopics(self):
         topics = self.model.show_topics(num_topics=-1, formatted=False)
-        topicText = ""
+        observCohText = ""
+        intrudWorText = ""
+        intrudWorList = ""
         for topicId, topicWords in topics:
-            for word,prob in topicWords:
-                topicText += word + " "
-            topicText += "\n"
-        return topicText
+            intrudId = random.randint(0, len(topicWords) - 1)
+            intrudWord = self.generateIntruder(topicId, len(topics), topicWords)
+            for idx, (word,prob) in enumerate(topicWords):
+                observCohText += word + " "
+                if idx == intrudId:
+                    intrudWorText += intrudWord + " "
+                    intrudWorList += intrudWord + "\n"
+                intrudWorText += word + " "
+            observCohText += "\n"
+            intrudWorText += "\n"
+        return (observCohText, intrudWorText, intrudWorList)
 
+    def generateIntruder(self, jdx, noTopics, jdxWords):
+        iterations = 10
+        idx = random.randint(0, noTopics - 1)
+        while (idx == jdx and iterations > 0):
+            idx = random.randint(0, noTopics - 1)
+            iterations = iterations - 1
+        words = self.model.show_topic(idx, topn=15)
+        
+        iterations = 10
+        kdx = random.randint(0, len(words) - 1)
+        while (words[kdx][1] in jdxWords and iterations > 0):
+            kdx = random.randint(0, len(words) - 1)
+            iterations = iterations - 1
+            
+        return words[kdx][0]
+        
     def __preprocess(self, line):
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
         prepro = PubmedPreprocesser(stemmer)
