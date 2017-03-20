@@ -7,6 +7,7 @@ import time
 import nltk
 nltk.data.path.append(os.path.join(os.path.dirname(__file__), 'lib', 'nltk', 'nltk_data'))
 
+from geniatagger import GeniaTagger
 from string import punctuation
 import regex as re
 
@@ -38,8 +39,11 @@ class Preprocesser:
 
 
 class PubmedPreprocesser(Preprocesser):
-    def __init__(self, stemmer):
+    def __init__(self, stemmer, tagger=True):
         self.stemmer = stemmer
+        self.tagger = None
+        if tagger:
+            self.tagger = GeniaTagger('./geniatagger/geniatagger')
 
     def stemWords(self, string):
         result = ""
@@ -76,12 +80,12 @@ class PubmedPreprocesser(Preprocesser):
         return result
 
     def removeNonNouns(self, text):
-        text = nltk.word_tokenize(text)
-        taggedText = nltk.pos_tag(text)
         output = ""
-        for word, tag in taggedText:
-            if (tag.startswith("NN")):
-                output += word + " "
+        for sentence in text.split("."):
+            taggedText = self.tagger.parse(sentence)
+            for wordInfo in taggedText:
+                if (wordInfo[2].startswith("NN")):
+                    output += wordInfo[0] + " "
         return output
 
 class PostPreprocesser:
@@ -100,12 +104,18 @@ class PostPreprocesser:
                 continue
             
             # Copy back to the string what does not need to be filtered
-            output += components[0] + ' ' + components[1] + ' ';
+            #output += components[0] + ' ' + components[1] + ' ';
+            line = components[0] + ' ' + components[1] + ' ';
+            flag = False
             for word in components[2].split():
                 if(word.isdigit() or len(word)==1 or self.__isExtreme(word, wordOccCount, noDocs)):
                     continue
-                output += word + ' ';
-                
+                flag = True
+                line += word + ' ';
+                #output += word + ' ';
+            if not flag:
+                continue
+            output += line
             # Replace last space with new line
             # get rid of this
             output = output[:-1]
@@ -119,5 +129,5 @@ class PostPreprocesser:
         
     def __isExtreme(self, word, wordOccurenceCounter, noDocs):
         noOcc = wordOccurenceCounter[word]
-        return noOcc > noDocs * 0.60 or noOcc < noDocs * 0.05
+        return noOcc > noDocs * 0.70 or noOcc < noDocs * 0.02
         

@@ -10,7 +10,7 @@ from tsforecaster import TSForecaster
 
 class TopicManager():
 
-    def getTopics(self, model, docs, linker=SimpleTopicLinker(), forecaster=TSForecaster(), summary = True):
+    def getTopics(self, model, docs, linker=SimpleTopicLinker(), forecaster=TSForecaster(), summary = True, lda=True):
         logging.info("getTopics()")
         
         # Extract basic information from our document set about each topic
@@ -31,10 +31,14 @@ class TopicManager():
         link_list = []
         noDocs = len(docs)
         for (source, target), values in links.iteritems():
-            if(linker.strongLink(values, noDocs)):
+            if(linker.strongLink(values, noDocs, lda)):
+                value = linker.getFinalValue(source, target, values, noDocs)
+                if value == -1:
+                    continue
+                    logging.warn("Drop link")
                 link_list.append(LinkInformation(source, 
                                                  target, 
-                                                 linker.getFinalValue(source, target, values, noDocs)))
+                                                 value)) 
         
         return (topics, link_list)
                 

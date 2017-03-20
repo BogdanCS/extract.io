@@ -22,8 +22,8 @@ class Cron(webapp2.RequestHandler):
         logging.info("Cron starting..")
         pubmed = PubmedRetriever()
         #todo update
-        NO_DOCS = 50
-        papers = pubmed.getDocumentsIf("diabetes", NO_DOCS, "2006", "2016")
+        NO_DOCS = 20000
+        papers = pubmed.getDocumentsIf("diabetes", NO_DOCS, "2005", "2016")
 
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') # dictionary based stemmer
         # stemmer = SnowballStemmer("english") # algorithmic(Porter) stemmer

@@ -128,7 +128,7 @@ class TSForecaster(object):
        #         #topic.forecastYears[str(date.year)] = int(math.floor(forecast))
        #         history.append(forecast)
                 
-        print topic.forecastYears
+        topic.forecastYears.update((x, int(math.ceil(y/3))) for x,y in topic.forecastYears.items())
         
             
       #  # Remove trends/seasonality

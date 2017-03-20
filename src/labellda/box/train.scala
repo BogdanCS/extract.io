@@ -48,5 +48,5 @@ val modelParams = LabeledLDAModelParams(dataset=dataset);
 val modelPath = file("modelfolder");
 
 // Trains the model, writing to the given output path
-TrainCVB0LabeledLDA(modelParams, dataset, output = modelPath, maxIterations = 5);
+TrainCVB0LabeledLDA(modelParams, dataset, output = modelPath, maxIterations = 50);
 // TrainGibbsLabeledLDA(modelParams, dataset, output = modelPath, maxIterations = 1500);

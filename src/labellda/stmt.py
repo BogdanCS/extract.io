@@ -369,7 +369,8 @@ class STMT(object):
         LIDX = '00000{0}label-index'.format(sep)   # label index
         TIDX = '00000{0}term-index'.format(sep)   # term index
         # TBU: 00400 shouldn't be hardcoded
-        TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        #TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        TWOR = '04000{0}topic-term-distributions'.format(sep) # word distribution per topic
         #TWOR = '{0}_{1}-top-terms'.format(self.name, 'test') # top words per topic/label
 
         # Associate label index with words/label(topic)
@@ -431,7 +432,8 @@ class STMT(object):
             self.dir, self.name, 'train', sep, TIDX), 'r')
         term_index = ter.read().split('\n')[:-1]
 
-        TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        #TWOR = '00400{0}topic-term-distributions'.format(sep) # word distribution per topic
+        TWOR = '04000{0}topic-term-distributions'.format(sep) # word distribution per topic
         words = []
         with gzip.open("{0}{1}_{2}{3}{4}.csv.gz".format(
                 self.dir, self.name, 'train', sep, TWOR), 'r') as f:

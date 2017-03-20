@@ -99,7 +99,7 @@ class LLDATopicModel(TopicModel):
             
         # Filter out unlikely labels
         # Need to normalise topic proabilities with the other models
-        output = [(index, prob) for (index, prob) in output if prob > globals.TOPIC_PROB_THRESHOLD * 0.010]
+        output = [(index, prob) for (index, prob) in output if prob > globals.TOPIC_PROB_THRESHOLD * 0.035]
         print "LLDA topics %d" % len(output)
         return output
             
@@ -128,13 +128,13 @@ class LLDATopicModel(TopicModel):
         
         for jdx, value in enumerate(self.words):
             wordsProb = value[1]
-            intrudId = random.randint(0, len(wordsProb))
+            intrudId = random.randint(0, len(wordsProb)-1)
             intrudWord = self.generateIntruder(jdx)
             for idx, (word, prob) in enumerate(wordsProb):
                 observCohText += word + " "
                 if idx == intrudId:
                     intrudWorText += intrudWord + " "
-                    intrudWorList += intrudWord + "\n"
+                    intrudWorList += str(idx+1) + "\n"
                 intrudWorText += word + " "
             observCohText += "\n"
             intrudWorText += "\n"
@@ -148,9 +148,9 @@ class LLDATopicModel(TopicModel):
             iterations = iterations - 1
             
         iterations = 10
-        print self.words[idx]
         kdx = random.randint(0, len(self.words[idx][1]) - 1)
-        while (self.words[idx][1][kdx] in self.words[jdx][1] and iterations > 0):
+        wordsDict = dict(self.words[jdx][1])
+        while (self.words[idx][1][kdx] in wordsDict and iterations > 0):
             kdx = random.randint(0, len(self.words[idx][1]) - 1)
             iterations = iterations - 1
             
@@ -202,7 +202,7 @@ class LDATopicModel(TopicModel):
         logging.info("Train unsupervised LDA")
         corpus = gensim.corpora.MalletCorpus(globals.CORPUS_PATH)
         _ = self.bowConverter.merge_with(globals.CORPUS.id2word) 
-        self.model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=7, num_topics=75, iterations=300)
+        self.model = gensim.models.LdaModel(corpus, id2word=corpus.id2word, alpha='auto', passes=10, num_topics=125, iterations=500)
         self.model.save(globals.TRAINED_MODEL_PATH)
         
         # Update cache
@@ -216,7 +216,6 @@ class LDATopicModel(TopicModel):
         # globals.THRESHOLD ?
         topics = self.model.get_document_topics(bow, minimum_probability=globals.TOPIC_PROB_THRESHOLD)
         # Assign labels on demand
-        print docInfo.labels
         for topicId, prob in topics:
             label = self.assignLabel(topicId)
             label = "".join(label.split())
@@ -253,8 +252,6 @@ class LDATopicModel(TopicModel):
         topWords = dict(self.model.show_topic(topicId, topn=5))
         self.updateWordAverage(topWords)
         #trueTopWords = self.getTrueTopWords(topWords)
-        print "COMPARE"
-        print topWords
         #print trueTopWords
 
         pubmed = PubmedRetriever()
@@ -281,8 +278,6 @@ class LDATopicModel(TopicModel):
         for word in topWords.keys():
             if word not in self.wordAverageMax:
                 likelyTopics = self.model.get_term_topics(self.bowConverter.token2id[word])
-                print "GUARD"
-                print likelyTopics
                 if len(likelyTopics) == 0:
                     logging.info("Word not found")
                     self.wordAverageMax[word] = (0.0, 0.0)
@@ -295,8 +290,6 @@ class LDATopicModel(TopicModel):
         for word in topWords.keys():
             if word not in self.wordAverageMax:
                 likelyTopics = self.model.get_term_topics(self.bowConverter.token2id[word])
-                print "GUARD"
-                print likelyTopics
                 if len(likelyTopics) == 0:
                     logging.info("Word not found")
                     self.wordAverageMax[word] = (0.0, 0.0)
@@ -349,7 +342,7 @@ class LDATopicModel(TopicModel):
                 observCohText += word + " "
                 if idx == intrudId:
                     intrudWorText += intrudWord + " "
-                    intrudWorList += intrudWord + "\n"
+                    intrudWorList += str(idx+1) + "\n"
                 intrudWorText += word + " "
             observCohText += "\n"
             intrudWorText += "\n"
@@ -365,7 +358,8 @@ class LDATopicModel(TopicModel):
         
         iterations = 10
         kdx = random.randint(0, len(words) - 1)
-        while (words[kdx][1] in jdxWords and iterations > 0):
+        jdxWords = dict(jdxWords)
+        while (words[kdx][0] in jdxWords and iterations > 0):
             kdx = random.randint(0, len(words) - 1)
             iterations = iterations - 1
             
@@ -373,7 +367,7 @@ class LDATopicModel(TopicModel):
         
     def __preprocess(self, line):
         stemmer = hunspell.HunSpell('/usr/share/myspell/dicts/en_GB.dic', '/usr/share/myspell/dicts/en_GB.aff') 
-        prepro = PubmedPreprocesser(stemmer)
+        prepro = PubmedPreprocesser(stemmer, False)
         return prepro.stemWords(
                prepro.removeStopWords(
                prepro.removePunctuation(

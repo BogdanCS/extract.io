@@ -137,13 +137,15 @@ class RPCNewSearchHandler(webapp2.RequestHandler):
             
             # This could be model factory
             model = None
+            mylda = True
             if(req['model'] == 'LLDA'):
                 model = LLDATopicModel(globals.LLDA_MODEL, globals.PROCESSED_CACHED_CORPUS)
+                mylda = False
             else:
                 model = LDATopicModel(globals.LDA_MODEL)
                 
             # Retrieve topics and links
-            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS, PMITopicLinker())
+            (topics, links) = TopicManager().getTopics(model, globals.PROCESSED_CACHED_CORPUS, PMITopicLinker(), lda = mylda)
 
             print model.getPerplexity()
 

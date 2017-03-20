@@ -95,15 +95,7 @@ class DocumentInformation(object):
                     self.summaries[topic.uid] = (windowStart, windowEnd)
                 windowStart = windowStart + 1
                 windowEnd = windowEnd + 1
-            #Debugging
-            print self.uiText.encode('utf8')
-            print topic.nameTokens
-            print topic.wordsProb
             (start, end) = self.summaries[topic.uid]
-            for wordsIdx in range(start, end+1):
-                print words[wordsIdx].encode('utf8') + " ",
-            print "END!!!"
-            print
         del self.prepro
 
     def getWordProbDec(self, word, wordsProb, wordProbAvg, title, maxProb):
@@ -127,7 +119,7 @@ class DocumentInformation(object):
         words = self.uiText.split()
 
         wordsLength = len(words)
-        windowSize = int(math.floor(wordsLength * 0.07))
+        windowSize = int(math.floor(wordsLength * 0.08))
         #getcontext().prec = 100
         for topicId in self.topicList:
             topic = topics[topicId]
@@ -167,13 +159,4 @@ class DocumentInformation(object):
                     self.summaries[topic.uid] = (windowStart, windowEnd)
                 windowStart = windowStart + 1
                 windowEnd = windowEnd + 1
-            #Debugging
-            print self.uiText.encode('utf8')
-            print topic.nameTokens
-            print topic.wordsProb
-            (start, end) = self.summaries[topic.uid]
-            for wordsIdx in range(start, end+1):
-                print words[wordsIdx].encode('utf8') + " ",
-            print "END!!!"
-            print
         del self.prepro

@@ -1,13 +1,15 @@
 (function() {
 
-  var LIMIT = 50;
+  var LIMIT = 560;
     
-  var LDA_NODE_SIZE= 1.5;
+  var LDA_NODE_SIZE= 1.8;
   var LLDA_NODE_SIZE = 10;
+  var DUALLLDA_NODE_SIZE = 19;
+  var DUALLDA_NODE_SIZE = 2;
     
-  var LDA_LINK_SIZE = 1.2;
+  var LDA_LINK_SIZE = 1.0;
   var DUAL_LINK_SIZE = 1.2;
-  var LLDA_LINK_SIZE = 0.5;
+  var LLDA_LINK_SIZE = 0.3;
 
   var keyword = "diabetes",
       model = "LLDA",
@@ -44,7 +46,7 @@
 	removeTopics();
       }
     });
-    $("#startdatepicker").datepicker("setDate", "01/01/2001");
+    $("#startdatepicker").datepicker("setDate", "01/01/2008");
     $("#enddatepicker").datepicker("setDate", "01/01/2016");
     $('#startDatepickerBtn').addClass('active');
     $('#endDatepickerBtn').addClass('active');
@@ -445,7 +447,11 @@
 		}
 		else if (model == "DUAL" && d.uid < 0)
 		{
-		    return d.score*500*(LLDA_NODE_SIZE*0.8);
+		    return d.score*500*(DUALLLDA_NODE_SIZE*0.8);
+		}
+		else if (model == "DUAL")
+		{
+		    return d.score*500*(DUALLDA_NODE_SIZE*0.8);
 		}
 
 		return d.score*500*LDA_NODE_SIZE; /// radiusCoefficient;
@@ -533,7 +539,7 @@
 	      {
 		  topicTitle += tokens[jdx] + " "
 	      }
-	      titleLength = topicTitle.length < 20 ? doc.title.length : 20 
+	      titleLength = topicTitle.length < 40 ? doc.title.length : 40 
 	      return topicTitle.slice(0,titleLength) + "..."
 	  }
 	    

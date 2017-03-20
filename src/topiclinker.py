@@ -94,13 +94,20 @@ class PMITopicLinker:
         else:
             self.topicOcc[topicId] = self.topicOcc[topicId] + 1.0
             
-    def strongLink(self, values, noDocs):
+    def strongLink(self, values, noDocs, lda):
         # 5% of total number of documents
-        if (values[1] < 0.05 * noDocs): 
+        if (lda and values[1] < (0.04 * noDocs)): 
+            return False
+        elif lda:
+            return True
+        if not lda and values[1] < (0.10 * noDocs):
             return False
         return True
         
     def getFinalValue(self, source, target, values, noDocs):
-        numerator = values[1]/float(noDocs) 
-        numitor = (self.topicOcc[source]/float(noDocs)) * (self.topicOcc[target]/float(noDocs)) 
-        return numerator/numitor * 50
+        try:
+            numerator = values[1]/float(noDocs) 
+            numitor = (self.topicOcc[source]/float(noDocs)) * (self.topicOcc[target]/float(noDocs)) 
+            return numerator/numitor * 50
+        except:
+            return -1
